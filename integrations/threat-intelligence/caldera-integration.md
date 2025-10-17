@@ -1,68 +1,197 @@
-# MITRE CALDERA Integration with Wazuh
+# Caldera Integration with Wazuh
 
 ## Overview
-MITRE CALDERA is an adversary emulation framework that enables automated adversary emulation, red team operations, and threat hunting. This integration allows Wazuh to monitor CALDERA operations and detect simulated attacks.
+**MITRE Caldera** is an open-source adversary emulation platform that automates ATT&CK-aligned behaviors.  
+In this SOC environment, Caldera is used to generate realistic red-team activity, validate Wazuh detections, dashboards, and incident workflows.
 
-## Requirements
-- Wazuh Manager 4.13.1
-- Ubuntu 24.04 LTS
-- Python 3.12+
-- 8GB RAM minimum
+This document details the full methodology used in the **Wazuh SOC Enterprise** lab, including installation, configuration, Wazuh ingestion, rules, and testing.
 
-## Installation
+---
 
-### Step 1: Install CALDERA
+## 1) Requirements
+| Component | Version | Purpose |
+|------------|----------|----------|
+| **Ubuntu** | 24.04 LTS | Host OS |
+| **Wazuh Manager** | 4.13.x | SIEM / XDR |
+| **Python** | 3.12+ | Caldera runtime |
+| **Node.js** | 16+ | Caldera UI build |
+| **Git** | Latest | Source retrieval |
+| **Go** | ≥1.19 | Build Sandcat agent |
+| **Docker (optional)** | Latest | Builder plugin |
+
+---
+
+## 2) Installation
+
+### Step 1 — Create virtual environment
 ```bash
-cd ~
-git clone https://github.com/mitre/caldera.git --recursive
-cd caldera
-python3 -m venv venv
-source venv/bin/activate
+sudo apt update
+sudo apt install -y python3-venv python3-pip git nodejs npm
+python3 -m venv ~/caldera-wazuh
+source ~/caldera-wazuh/bin/activate
+````
+
+### Step 2 — Clone and install Caldera
+
+```bash
+git clone https://github.com/mitre/caldera.git --recursive --branch 5.3.0
+cd ~/caldera
 pip install -r requirements.txt
 ```
 
-### Step 2: Configure Wazuh Monitoring
+### Step 3 — First run (build interface)
 
-Add to `/var/ossec/etc/ossec.conf`:
-```xml
-<!-- Caldera C2 Framework -->
-<localfile>
-  <log_format>json</log_format>
-  <location>/home/brunoflausino/caldera/logs/caldera.log</location>
-  <only-future-events>yes</only-future-events>
-</localfile>
+```bash
+python3 server.py --insecure --build
 ```
 
-Restart Wazuh Manager:
+### Step 4 — Normal startup
+
 ```bash
+python3 server.py --insecure
+```
+
+* UI: [http://127.0.0.1:8888/](http://127.0.0.1:8888/)
+* Default credentials (demo only):
+  **User:** red
+  **Pass:** admin
+
+---
+
+## 3) Integration with Wazuh
+
+### Step 3.1 — Configure Caldera log collection
+
+Edit `/var/ossec/etc/ossec.conf` on the Wazuh Manager and add:
+
+```xml
+<ossec_config>
+  <localfile>
+    <log_format>json</log_format>
+    <location>/home/brunoflausino/caldera/logs/caldera.log</location>
+    <only-future-events>yes</only-future-events>
+  </localfile>
+</ossec_config>
+```
+
+Then:
+
+```bash
+sudo systemctl restart wazuh-manager
+sudo chown -R wazuh:wazuh /home/brunoflausino/caldera/logs/
+sudo chmod -R 640 /home/brunoflausino/caldera/logs/
+```
+
+---
+
+## 4) Wazuh Rules for Caldera
+
+Create `/var/ossec/etc/rules/caldera_rules.xml`:
+
+```xml
+<group name="caldera,red_team">
+  <rule id="100001" level="3">
+    <decoded_as>json</decoded_as>
+    <field name="source">^caldera$</field>
+    <field name="event_type">.+</field>
+    <description>Caldera Red Team Event</description>
+  </rule>
+
+  <rule id="100002" level="5">
+    <if_sid>100001</if_sid>
+    <field name="event_type">^operation_start$</field>
+    <description>Caldera Operation Started: $(operation_id)</description>
+  </rule>
+
+  <rule id="100003" level="7">
+    <if_sid>100001</if_sid>
+    <field name="event_type">^operation_complete$</field>
+    <description>Caldera Operation Completed</description>
+  </rule>
+
+  <rule id="100004" level="6">
+    <if_sid>100001</if_sid>
+    <field name="event_type">^ability_executed$</field>
+    <description>Caldera Ability Executed: $(ability_name)</description>
+  </rule>
+</group>
+```
+
+Permissions:
+
+```bash
+sudo chown wazuh:wazuh /var/ossec/etc/rules/caldera_rules.xml
+sudo chmod 640 /var/ossec/etc/rules/caldera_rules.xml
 sudo systemctl restart wazuh-manager
 ```
 
-## Starting CALDERA
+---
+
+## 5) Testing Integration
+
+### Step 5.1 — Create a test JSON event
+
 ```bash
-cd ~/caldera
-source venv/bin/activate
-python server.py --insecure
+echo '{"source":"caldera","event_type":"operation_start","operation_id":"demo-'$(date +%s)'","ts":"'$(date -Is)'"}' \
+  >> /home/brunoflausino/caldera/logs/caldera.log
 ```
 
-Access UI: http://127.0.0.1:8888/
+### Step 5.2 — Validate via Wazuh Logtest
 
-## Verification
-
-Test Wazuh integration:
 ```bash
-TOKEN="TEST_$(date +%s)"
-echo '{"event":"test","token":"'$TOKEN'"}' >> ~/caldera/logs/caldera.log
-sleep 5
-sudo grep -q "$TOKEN" /var/ossec/logs/archives/* && echo "✓ Working"
+sudo /var/ossec/bin/wazuh-logtest
 ```
 
-## Troubleshooting
+Paste the JSON and expect rule **100002** to match.
 
-**Issue**: "is not a JSON object" error  
-**Fix**: Ensure CALDERA outputs valid JSON or change log_format to syslog
+### Step 5.3 — Validate via archives
 
-**Issue**: No events appearing  
-**Check**: 
-- CALDERA running: `curl -I http://127.0.0.1:8888/`
-- Logs exist: `ls ~/caldera/logs/`
+```bash
+sudo grep -R --line-number -F '"event_type":"operation_start"' /var/ossec/logs/ 2>/dev/null | head
+```
+
+Expected output: lines showing rules **100001** and **100002** triggered.
+
+---
+
+## 6) Troubleshooting
+
+| Issue                  | Cause                 | Solution                                                  |
+| ---------------------- | --------------------- | --------------------------------------------------------- |
+| “is not a JSON object” | Plain text log entry  | Ensure valid JSON per line                                |
+| Rule conflict          | Duplicate IDs         | Use IDs >100000 or clear cache                            |
+| No matches             | File permissions      | Ensure Wazuh can read `/home/brunoflausino/caldera/logs/` |
+| Missing events         | Manager not restarted | `sudo systemctl restart wazuh-manager`                    |
+
+---
+
+## 7) Hardening and Operational Notes
+
+* Replace `--insecure` with secure credentials in `conf/local.yml`.
+* Configure SSL/TLS for Caldera if exposed externally.
+* Regularly rotate `/home/brunoflausino/caldera/logs/caldera.log`.
+* Keep Caldera updated:
+
+  ```bash
+  cd ~/caldera && git pull && pip install -r requirements.txt
+  ```
+* For advanced usage, integrate Caldera API to automate red-team campaigns and alert verification.
+
+---
+
+## 8) Summary
+
+| Stage           | Description                                               |
+| --------------- | --------------------------------------------------------- |
+| **Setup**       | Created isolated Python environment and installed Caldera |
+| **Integration** | Linked Caldera logs to Wazuh via JSON collector           |
+| **Detection**   | Deployed four rules (IDs 100001–100004)                   |
+| **Validation**  | Sent simulated event, confirmed in Wazuh dashboard        |
+| **Hardened**    | Enabled restricted permissions and secure configs         |
+
+---
+
+### Author
+
+**Bruno Rubens Flausino Teixeira**
+*Wazuh SOC Enterprise Lab — Threat Intelligence Stack*

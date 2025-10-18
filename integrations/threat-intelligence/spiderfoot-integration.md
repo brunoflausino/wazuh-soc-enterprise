@@ -4,6 +4,26 @@
 **SpiderFoot** is an automated OSINT reconnaissance tool that can produce JSON-line events suitable for ingestion by Wazuh.  
 This document records the methodology used in the Wazuh SOC Enterprise lab to integrate SpiderFoot → Wazuh (local JSON ingestion), validate the pipeline, apply protective log rotation and neutralize interfering Filebeat configurations. It includes the exact Wazuh rules used (IDs 100600 / 100601), operational scripts, test steps and hardening notes.
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 **Validated environment (lab)**  
 - SpiderFoot service: HTTP server on `127.0.0.1:5002` (Digest auth)  
 - SpiderFoot events file: `/var/log/spiderfoot/events.jsonl` (one JSON object per line)  

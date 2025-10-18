@@ -1,72 +1,53 @@
 # SpiderFoot Integration with Wazuh
 
 ## Overview
-**SpiderFoot** is an automated OSINT reconnaissance tool that can produce JSON-line events suitable for ingestion by Wazuh.  
+**SpiderFoot** is an automated OSINT reconnaissance tool that can produce JSON-line events suitable for ingestion by Wazuh.
 This document records the methodology used in the Wazuh SOC Enterprise lab to integrate SpiderFoot → Wazuh (local JSON ingestion), validate the pipeline, apply protective log rotation and neutralize interfering Filebeat configurations. It includes the exact Wazuh rules used (IDs 100600 / 100601), operational scripts, test steps and hardening notes.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-**Validated environment (lab)**  
-- SpiderFoot service: HTTP server on `127.0.0.1:5002` (Digest auth)  
-- SpiderFoot events file: `/var/log/spiderfoot/events.jsonl` (one JSON object per line)  
-- Wazuh Manager: single node, normal installation (paths: `/var/ossec/...`)  
+**Validated environment (lab)**
+- SpiderFoot service: HTTP server on `127.0.0.1:5002` (Digest auth)
+- SpiderFoot events file: `/var/log/spiderfoot/events.jsonl` (one JSON object per line)
+- Wazuh Manager: single node, normal installation (paths: `/var/ossec/...`)
 - Filebeat installed on same host but intentionally neutralized for SpiderFoot logs
 
 ---
 
-## 1) Requirements
-- Python/SpiderFoot installed (system package or container)  
-- Wazuh Manager with localfile collection enabled for SpiderFoot events (JSON)  
-- `curl`, `jq`, `logger`, `grep`, `filebeat` (for neutralization workflow)  
+## 1. Requirements
+- Python/SpiderFoot installed (system package or container)
+- Wazuh Manager with localfile collection enabled for SpiderFoot events (JSON)
+- `curl`, `jq`, `logger`, `grep`, `filebeat` (for neutralization workflow)
 - Privileges to edit `/var/ossec/etc/ossec.conf`, `/var/ossec/etc/rules/local_rules.xml` and to write `/var/log/spiderfoot/`
 
 ---
 
-## 2) SpiderFoot: general deployment & auth
-- Run SpiderFoot bound to `127.0.0.1` (do not expose publicly).  
-- Digest auth credentials file **must** be placed under the SpiderFoot user's home: `~/.spiderfoot/passwd` (one line `username:password`).  
+## 2. SpiderFoot: general deployment & auth
+- Run SpiderFoot bound to `127.0.0.1` (do not expose publicly).
+- Digest auth credentials file **must** be placed under the SpiderFoot user's home: `~/.spiderfoot/passwd` (one line `username:password`).
 - If you use a package or systemd service, ensure the service user is `spiderfoot` (or adapt paths).
 
 **Important notes**
 - If your password contains `!` or other special characters, disable Bash history expansion for that command (`set +H`) or quote properly.
 - Example credential file creation (replace placeholder with your secret — do not commit secrets):
-  ```bash
-  # as root or with sudo
-  sudo -u spiderfoot mkdir -p /home/spiderfoot/.spiderfoot
-  sudo -u spiderfoot bash -c 'printf "%s\n" "sfadmin:REPLACE_WITH_STRONG_PASSWORD" > /home/spiderfoot/.spiderfoot/passwd'
-  sudo chown -R spiderfoot:wazuh /home/spiderfoot/.spiderfoot
-  sudo chmod 750 /home/spiderfoot/.spiderfoot
-  sudo chmod 640 /home/spiderfoot/.spiderfoot/passwd
+
+```bash
+# as root or with sudo
+sudo -u spiderfoot mkdir -p /home/spiderfoot/.spiderfoot
+sudo -u spiderfoot bash -c 'printf "%s\n" "sfadmin:REPLACE_WITH_STRONG_PASSWORD" > /home/spiderfoot/.spiderfoot/passwd'
+sudo chown -R spiderfoot:wazuh /home/spiderfoot/.spiderfoot
+sudo chmod 750 /home/spiderfoot/.spiderfoot
+sudo chmod 640 /home/spiderfoot/.spiderfoot/passwd
 ````
 
 Validate Digest auth:
 
 ```bash
-curl --digest -u 'sfadmin:REPLACE_WITH_STRONG_PASSWORD' -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:5002/
+curl --digest -u 'sfadmin:REPLACE_WITH_STRONG_PASSWORD' -s -o /dev/null -w '%{http_code}\n' [http://127.0.0.1:5002/](http://127.0.0.1:5002/)
 # Expect 200
 ```
 
----
+-----
 
-## 3) Wazuh integration (local JSON file ingestion)
+## 3\. Wazuh integration (local JSON file ingestion)
 
 ### 3.1 ossec.conf snippet
 
@@ -85,7 +66,7 @@ Add a localfile entry on the Wazuh Manager to collect SpiderFoot events (JSONL):
 Then reload/restart the manager:
 
 ```bash
-sudo /var/ossec/bin/wazuh-control restart   # or systemctl restart wazuh-manager
+sudo /var/ossec/bin/wazuh-control restart  # or systemctl restart wazuh-manager
 ```
 
 ### 3.2 Log rotation (logrotate)
@@ -107,16 +88,15 @@ Create `/etc/logrotate.d/spiderfoot` to rotate `events.jsonl` safely:
 
 `copytruncate` keeps Wazuh reading the file while rotated.
 
----
+-----
 
-## 4) Wazuh rules (example)
+## 4\. Wazuh rules (example)
 
 Place this authoritative block in `/var/ossec/etc/rules/local_rules.xml` (avoid duplicates):
 
 ```xml
 <group name="spiderfoot,local,">
 
-  <!-- Base: match any SpiderFoot JSON event -->
   <rule id="100600" level="3">
     <location type="pcre2">/var/log/spiderfoot/events\.jsonl</location>
     <decoded_as>json</decoded_as>
@@ -125,7 +105,6 @@ Place this authoritative block in `/var/ossec/etc/rules/local_rules.xml` (avoid 
     <group>spiderfoot,</group>
   </rule>
 
-  <!-- Credential exposure pattern -->
   <rule id="100601" level="8">
     <if_sid>100600</if_sid>
     <match>password|credential|creds|apikey|token|leak|exposed|pwned</match>
@@ -145,9 +124,9 @@ sudo systemctl restart wazuh-manager
 
 **Avoid duplicating rule IDs** — keep one canonical rules file to prevent analysisd warnings.
 
----
+-----
 
-## 5) Filebeat neutralization (when Filebeat interferes)
+## 5\. Filebeat neutralization (when Filebeat interferes)
 
 If Filebeat was previously configured to read `events.jsonl`, neutralize it (we prefer Wazuh localfile for ingestion). Example steps used in the lab:
 
@@ -190,9 +169,9 @@ sudo systemctl restart filebeat
 
 This recovers Filebeat while ensuring it does not consume SpiderFoot logs.
 
----
+-----
 
-## 6) Tests & validation (end-to-end)
+## 6\. Tests & validation (end-to-end)
 
 ### 6.1 Inject baseline and sensitive events
 
@@ -219,9 +198,9 @@ sudo jq -c 'select((.rule.id|tostring)=="100600" or (.rule.id|tostring)=="100601
 
 Expected: an alert with rule `100600` for the baseline event and `100601` for the sensitive/credential event.
 
----
+-----
 
-## 7) Scripts (S1–S6) — reproducible artifacts
+## 7\. Scripts (S1–S6) — reproducible artifacts
 
 Below are the scripts used in the lab. Save each as indicated (executable) or copy them into a `scripts/spiderfoot/` directory in the repo.
 
@@ -363,7 +342,7 @@ sudo systemctl daemon-reload || true
 sudo systemctl restart spiderfoot || true
 sudo systemctl --no-pager --full status spiderfoot | sed -n '1,20p' || true
 # validate digest
-curl --digest -u 'sfadmin:REPLACE_WITH_STRONG_PASSWORD' -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:5002/ || true
+curl --digest -u 'sfadmin:REPLACE_WITH_STRONG_PASSWORD' -s -o /dev/null -w '%{http_code}\n' [http://127.0.0.1:5002/](http://127.0.0.1:5002/) || true
 ```
 
 ### S6 — Ingestion sanity & rule verification
@@ -379,35 +358,35 @@ sudo egrep -n '"integration-doublecheck-ok"|"password token leaked"' /var/ossec/
 sudo jq -c 'select((.rule.id|tostring)=="100600" or (.rule.id|tostring)=="100601") | {ts:.timestamp, rule:.rule.id, desc:.rule.description, msg:(.data.msg // .full_log // "")}' /var/ossec/logs/alerts/alerts.json | tail -n 10 || true
 ```
 
----
+-----
 
-## 8) Troubleshooting (common issues)
+## 8\. Troubleshooting (common issues)
 
-* **Filebeat crashes / no inputs** — rotate registry and apply neutral config (S1). Validate with `filebeat test config`.
-* **Duplicate rule IDs** — ensure only one authoritative SpiderFoot rule block exists (S2). Remove/disable any extra spiderfoot rule files.
-* **401 or crash loop** — SpiderFoot no longer supports `appdir/passwd`; move to `~/.spiderfoot/passwd` for the service user and restart (S5). Remember `set +H` when writing password with `!`.
-* **“is not a JSON object”** in Wazuh logs — ensure `events.jsonl` contains one well-formed JSON object per line and `ossec.conf` `<log_format>json</log_format>` is set for that file.
-* **No events in alerts** — check `sudo tail /var/ossec/logs/ossec.log` and `sudo /var/ossec/bin/wazuh-analysisd -t` for rule syntax errors.
+  * **Filebeat crashes / no inputs** — rotate registry and apply neutral config (S1). Validate with `filebeat test config`.
+  * **Duplicate rule IDs** — ensure only one authoritative SpiderFoot rule block exists (S2). Remove/disable any extra spiderfoot rule files.
+  * **401 or crash loop** — SpiderFoot no longer supports `appdir/passwd`; move to `~/.spiderfoot/passwd` for the service user and restart (S5). Remember `set +H` when writing password with `!`.
+  * **“is not a JSON object”** in Wazuh logs — ensure `events.jsonl` contains one well-formed JSON object per line and `ossec.conf` `<log_format>json</log_format>` is set for that file.
+  * **No events in alerts** — check `sudo tail /var/ossec/logs/ossec.log` and `sudo /var/ossec/bin/wazuh-analysisd -t` for rule syntax errors.
 
----
+-----
 
-## 9) Hardening & production notes
+## 9\. Hardening & production notes
 
-* Keep SpiderFoot bound to `127.0.0.1` and place behind a TLS-terminating reverse proxy if remote access is required. Restrict access with IP allow-lists or VPN.
-* Do **not** commit credentials; use vaults or environment-based secrets. Use `~/.spiderfoot/passwd` with strict perms.
-* Tailor rule `100601` to specific SpiderFoot module fields to reduce false positives (match structured keys rather than free text if possible).
-* Centralize alerts to SOAR/IR (e.g., Shuffle, DFIR-IRIS) and add Mitre/priority fields to rule outputs for triage.
+  * Keep SpiderFoot bound to `127.0.0.1` and place behind a TLS-terminating reverse proxy if remote access is required. Restrict access with IP allow-lists or VPN.
+  * Do **not** commit credentials; use vaults or environment-based secrets. Use `~/.spiderfoot/passwd` with strict perms.
+  * Tailor rule `100601` to specific SpiderFoot module fields to reduce false positives (match structured keys rather than free text if possible).
+  * Centralize alerts to SOAR/IR (e.g., Shuffle, DFIR-IRIS) and add Mitre/priority fields to rule outputs for triage.
 
----
+-----
 
-## 10) References
+## 10\. References
 
-* SpiderFoot — [https://www.spiderfoot.net/](https://www.spiderfoot.net/)
-* Wazuh docs — log collection, rules syntax, archives/alerts paths
-* Elastic/Filebeat docs — registry, test config, neutral output.file
-* System `logrotate(8)` manpage
+  * SpiderFoot — [https://www.spiderfoot.net/](https://www.spiderfoot.net/)
+  * Wazuh docs — log collection, rules syntax, archives/alerts paths
+  * Elastic/Filebeat docs — registry, test config, neutral output.file
+  * System `logrotate(8)` manpage
 
----
+-----
 
 ### Author
 

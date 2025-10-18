@@ -1,333 +1,375 @@
-# FreeRADIUS Integration with Wazuh (JSON/Linelog Method - Complete & Hardened)
+# **FreeRADIUS Authentication Server with Wazuh SIEM Integration**
 
-## 1. Abstract
+## **Complete Methodology - Ubuntu 24.04 LTS**
 
-This document details the complete, end-to-end integration of FreeRADIUS 3.x with Wazuh SIEM, synthesizing best practices from provided technical reports. This methodology represents a robust and secure approach, combining:
+***
 
-1.  **Hardened Security:** FreeRADIUS is configured to listen *only* on the localhost interface (`127.0.0.1` and `::1`), significantly reducing its direct network exposure. This configuration is suitable for scenarios where authentication requests are received locally (e.g., from local applications, test tools, or a dedicated proxy service documented elsewhere).
-2.  **Modern JSON Logging:** Utilizes the FreeRADIUS `rlm_linelog` module to output structured JSON logs directly to a file. This method leverages Wazuh's native JSON decoding, ensuring reliable parsing and resilience against log format changes compared to regex-based syslog methods.
-3.  **Critical Logging Fix:** Incorporates the mandatory configuration step to explicitly invoke the JSON logging module within the `Post-Auth-Type REJECT` block. This ensures that failed authentication attempts (`Access-Reject`) are reliably logged, addressing a common configuration oversight.
+## **1. System Environment**
 
-This guide provides reproducible steps for configuration, Wazuh integration, and validation specific to this JSON-based approach.
+- Operating System: Ubuntu 24.04 LTS
+- FreeRADIUS: 3.2.5 (Universe repository)
+- Wazuh: Manager, Indexer, Dashboard (bare metal)
+- Authentication: EAP-TLS
 
-## 2. System Environment
+***
 
-* **Operating System**: Ubuntu 24.04 LTS
-* **FreeRADIUS**: 3.2.5 (or compatible 3.x version)
-* **Wazuh SIEM**: 4.x (Tested with 4.13.1)
-
-## 3. Phase 1: FreeRADIUS Configuration
-
-This phase focuses on hardening FreeRADIUS network listeners and configuring reliable JSON logging for all authentication outcomes.
-
-### 3.1. Configure Module for JSON Logging (`wazuh_json`)
-
-Define a dedicated `linelog` module instance to format authentication events into JSON objects suitable for Wazuh.
-
-**Action:** Create/Edit the module configuration file.
+## **2. FreeRADIUS Installation**
 
 ```bash
-sudo nano /etc/freeradius/3.0/mods-available/wazuh_json
-````
+sudo apt update
+sudo apt install -y freeradius
+```
 
-**Content:** Paste the following configuration.
+***
 
-```text
-# FreeRADIUS Linelog Module Instance for Wazuh JSON Output
-# File: /etc/freeradius/3.0/mods-available/wazuh_json
+## **3. FreeRADIUS Configuration**
 
-linelog wazuh_json {
-  filename = /var/log/freeradius/wazuh-radius.json
-  permissions = 0640
-  format = "{\"event\":\"radius\",\"timestamp\":\"%{%{Event-Timestamp}:-%l}\",\"result\":\"%{%{reply:Packet-Type}:-unknown}\",\"user\":\"%{%{User-Name}:-unknown}\",\"calling_station\":\"%{%{Calling-Station-Id}:-unknown}\",\"called_station\":\"%{%{Called-Station-Id}:-unknown}\",\"nas_ip\":\"%{%{NAS-IP-Address}:-unknown}\",\"nas_identifier\":\"%{%{NAS-Identifier}:-unknown}\",\"service\":\"%{%{Service-Type}:-unknown}\",\"protocol\":\"%{%{Protocol}:-unknown}\",\"auth_type\":\"%{%{Auth-Type}:-none}\",\"reply_message\":\"%{%{Reply-Message}:-none}\",\"error_cause\":\"%{%{Error-Cause}:-none}\"}"
-  escape_string = json
+### **3.1 Virtual Server Configuration**
+
+File: `/etc/freeradius/3.0/sites-enabled/default`
+
+```bash
+######################################################################
+#  FreeRADIUS Default Virtual Server Configuration
+######################################################################
+server default {
+  listen {
+    type = auth
+    ipaddr = 127.0.0.1
+    port = 1812
+    limit {
+      max_connections = 16
+      lifetime = 0
+      idle_timeout = 30
+    }
+  }
+  listen {
+    type = acct
+    ipaddr = 127.0.0.1
+    port = 1813
+    limit {
+      max_connections = 16
+      lifetime = 0
+      idle_timeout = 30
+    }
+  }
+  listen {
+    type = auth
+    ipv6addr = ::1
+    port = 0
+    limit {
+      max_connections = 16
+      lifetime = 0
+      idle_timeout = 30
+    }
+  }
+  listen {
+    type = acct
+    ipv6addr = ::1
+    port = 0
+    limit {
+      max_connections = 16
+      lifetime = 0
+      idle_timeout = 30
+    }
+  }
+  authorize {
+    filter_username
+    preprocess
+    chap
+    mschap
+    digest
+    suffix
+    eap {
+      ok = return
+    }
+    files
+    expiration
+    logintime
+    pap
+  }
+  authenticate {
+    Auth-Type PAP {
+      pap
+    }
+    Auth-Type CHAP {
+      chap
+    }
+    Auth-Type MS-CHAP {
+      mschap
+    }
+    mschap
+    digest
+    eap
+  }
+  preacct {
+    preprocess
+    acct_unique
+    suffix
+    files
+  }
+  accounting {
+    detail
+    unix
+    exec
+    attr_filter.accounting_response
+  }
+  post-auth {
+    wazuh_json
+    attr_filter.access_reject
+    eap
+    remove_reply_message_if_eap
+  }
+  Post-Auth-Type REJECT {
+    wazuh_json
+    attr_filter.access_reject
+    eap
+    remove_reply_message_if_eap
+  }
+  Post-Auth-Type Challenge { }
+  Post-Auth-Type Client-Lost { }
+  realm LOCAL { }
 }
 ```
 
-**Action:** Enable the newly defined module.
+### **3.2 Clients Configuration**
+
+File: `/etc/freeradius/3.0/clients.conf`
 
 ```bash
-sudo ln -sf /etc/freeradius/3.0/mods-available/wazuh_json /etc/freeradius/3.0/mods-enabled/wazuh_json
-```
-
-### 3.2. Configure `clients.conf` (Hardening)
-
-Restrict FreeRADIUS to accept connections *only* from the local machine (`127.0.0.1` and `::1`).
-
-**Action:** Edit the clients configuration file.
-
-```bash
-sudo nano /etc/freeradius/3.0/clients.conf
-```
-
-**Content:** Ensure only localhost clients are defined and active.
-
-```conf
-# Define the client connecting from localhost IPv4
 client localhost {
     ipaddr = 127.0.0.1
-    secret = testing123  # IMPORTANT: Use a strong, unique secret in production!
-    require_message_authenticator = no # Often needed for local testing
-    nastype = other
+    secret = testing123
+    require_message_authenticator = no
+    nas_type = other
 }
 
-# Define the client connecting from localhost IPv6
 client localhost_ipv6 {
     ipv6addr = ::1
-    secret = testing123  # IMPORTANT: Use the same strong secret!
+    secret = testing123
 }
-
-# Ensure any default 'client 0.0.0.0/0' or other wide-open clients are REMOVED or COMMENTED OUT.
 ```
 
-### 3.3. Configure `sites-enabled/default` (Hardening & Critical Reject Fix)
+### **3.3 EAP Module Configuration**
 
-Modify the main virtual server configuration to:
-(A) Bind the server's network listeners exclusively to localhost IPs.
-(B) Ensure the `wazuh_json` logging module is invoked correctly for *both* `Access-Accept` and `Access-Reject` outcomes.
-
-**Action:** Edit the primary site configuration file.
+File: `/etc/freeradius/3.0/mods-available/eap`
 
 ```bash
-sudo nano /etc/freeradius/3.0/sites-available/default # Adjust if using a different site name
-```
-
-**Content Modifications:**
-
-**A. Bind Listeners to Localhost:** Locate the `listen` blocks within `server default { ... }`.
-
-```conf
-server default {
-    # --- Listener Configuration (Hardening) ---
-    listen {
-        type = auth
-        ipaddr = 127.0.0.1      # Listen ONLY on localhost IPv4
-        port = 1812
-    }
-    listen {
-        type = acct
-        ipaddr = 127.0.0.1      # Listen ONLY on localhost IPv4
-        port = 1813
-    }
-    # IPv6 Listeners (Optional - configure or disable)
-    listen {
-        type = auth
-        ipv6addr = ::1          # Listen ONLY on localhost IPv6
-        port = 0                # Set to 0 to disable IPv6 listener
-    }
-    listen {
-        type = acct
-        ipv6addr = ::1          # Listen ONLY on localhost IPv6
-        port = 0                # Set to 0 to disable IPv6 listener
-    }
-    # --- End Listener Configuration ---
-
-    # ... (authorize, authenticate, etc. sections remain) ...
-
-    # --- Post-Authentication Logging Configuration (Includes CRITICAL FIX) ---
-    post-auth {
-        # Log successful authentications (Access-Accept)
-        wazuh_json
-
-        # --- Sub-section for handling Access-Reject packets ---
-        Post-Auth-Type REJECT {
-            # CRITICAL FIX: Explicitly log failed authentications (Access-Reject)
-            wazuh_json
+eap {
+    default_eap_type = tls
+    timer_expire = 60
+    ignore_unknown_eap_types = no
+    max_sessions = ${max_requests}
+    md5 { }
+    gtc { auth_type = PAP }
+    tls-config tls-common {
+        private_key_password = whatever
+        private_key_file = /etc/ssl/private/ssl-cert-snakeoil.key
+        certificate_file = /etc/ssl/certs/ssl-cert-snakeoil.pem
+        ca_file = /etc/ssl/certs/ca-certificates.crt
+        ca_path = ${cadir}
+        cipher_list = "DEFAULT"
+        cipher_server_preference = no
+        tls_min_version = "1.2"
+        tls_max_version = "1.2"
+        ecdh_curve = ""
+        cache {
+            enable = no
+            lifetime = 24
         }
-        # --- End REJECT sub-section ---
+        verify { }
+        ocsp {
+            enable = no
+            override_cert_url = yes
+            url = "http://127.0.0.1/ocsp/"
+        }
     }
-    # --- End Post-Authentication Logging ---
-
-    # ... rest of server configuration ...
-} # End server default
+    tls {
+        tls = tls-common
+    }
+    ttls {
+        tls = tls-common
+        default_eap_type = md5
+        copy_request_to_tunnel = no
+        virtual_server = "inner-tunnel"
+        use_tunneled_reply = no
+    }
+    peap {
+        tls = tls-common
+        default_eap_type = mschapv2
+        copy_request_to_tunnel = no
+        virtual_server = "inner-tunnel"
+        use_tunneled_reply = no
+    }
+    mschapv2 { }
+}
 ```
 
-### 3.4. Set Log File Permissions
+***
 
-Ensure the FreeRADIUS process can write to the log file, and the Wazuh agent user (`wazuh`) can read it.
+## **4. Wazuh Agent Configuration**
 
-**Action:** Set ownership and permissions.
+### **4.1 Agent Configuration File**
 
-```bash
-# 1. Ensure the log file exists
-sudo touch /var/log/freeradius/wazuh-radius.json
-# 2. Set ownership to the FreeRADIUS user and group (usually freerad:freerad)
-sudo chown freerad:freerad /var/log/freeradius/wazuh-radius.json
-# 3. Set permissions: Owner=rw, Group=r, Other=
-sudo chmod 0640 /var/log/freeradius/wazuh-radius.json
-# 4. Add the 'wazuh' user to the 'freerad' group for read access
-sudo usermod -a -G freerad wazuh
-```
-
-### 3.5. Restart FreeRADIUS Service
-
-Apply all configuration changes.
-
-**Action:** Check syntax and restart.
-
-```bash
-# 1. Perform a syntax check
-sudo freeradius -C
-# Look for "Configuration appears to be OK."
-
-# 2. If syntax is OK, restart the service
-sudo systemctl restart freeradius.service
-
-# 3. Verify the service started correctly
-sudo systemctl status freeradius.service
-# Look for "active (running)"
-```
-
-## 4\. Phase 2: Wazuh Manager Configuration (JSON)
-
-Configure the Wazuh Manager to collect, automatically decode, and alert on the structured JSON logs.
-
-### 4.1. Configure Log Collection (`ossec.conf`)
-
-Instruct the Wazuh Manager to monitor the FreeRADIUS JSON log file.
-
-**Action:** Add a `<localfile>` block to `/var/ossec/etc/ossec.conf`.
+File: `/var/ossec/etc/ossec.conf` (on FreeRADIUS server)
 
 ```xml
-<ossec_config>
+<localfile>
+    <log_format>syslog</log_format>
+    <location>/var/log/freeradius/radius.log</location>
+</localfile>
 
-  <localfile>
+<localfile>
+    <log_format>journald</log_format>
+    <location>journald</location>
+    <filter field="SYSLOG_IDENTIFIER">freeradius</filter>
+    <only-future-events>yes</only-future-events>
+</localfile>
+
+<localfile>
     <log_format>json</log_format>
     <location>/var/log/freeradius/wazuh-radius.json</location>
-    <label key="@source">freeradius-json</label> <only-future-events>yes</only-future-events>
-  </localfile>
-
-  </ossec_config>
+    <label key="@source">freeradius-json</label>
+    <only-future-events>yes</only-future-events>
+</localfile>
 ```
 
-### 4.2. Add Custom Rules (`local_rules.xml`)
-
-Define Wazuh rules specifically for the JSON log format produced by the `wazuh_json` module.
-
-**Action:** Add the following rule group to `/var/ossec/etc/rules/local_rules.xml`.
-
-````xml
-<group name="local,freeradius,radius,authentication,">
-
-  <rule id="200100" level="0">
-    <decoded_as>json</decoded_as>
-    <field name="event">radius</field>
-    <description>FreeRADIUS: JSON Authentication event received.</description>
-  </rule>
-
-  <rule id="200101" level="8">
-    <if_sid>200100</if_sid>
-    <field name="result">Access-Reject</field>
-    <description>FreeRADIUS: Authentication Rejected for user $(user) from client $(calling_station).</description>
-    <mitre>
-      <id>T1110</id> <id>T1078</id>
-    </mitre>
-    <group>authentication_failed,gdpr_IV_35.7.d,hipaa_164.312.b,nist_800_53_AU.14,nist_800_53_AC.7,pci_dss_10.2.4,pci_dss_10.2.5,tsc_CC6.1,tsc_CC6.8,</group>
-  </rule>
-
-  <rule id="200102" level="3">
-    <if_sid>200100</if_sid>
-    <field name="result">Access-Accept</field>
-    <description>FreeRADIUS: Authentication Successful for user $(user) from client $(calling_station).</description>
-    <mitre>
-      <id>T1078</id>
-    </mitre>
-    <group>authentication_success,gdpr_IV_32.2,hipaa_164.312.b,nist_800_53_AU.14,nist_800_53_AC.7,pci_dss_10.2.5,tsc_CC6.1,tsc_CC6.8,</group>
-  </rule>
-
-  <rule id="200103" level="10" frequency="5" timeframe="300" context="correlation">
-    <if_matched_sid>200101</if_matched_sid>
-    <same_field>calling_station</same_field>
-    <description>FreeRADIUS: Multiple authentication failures detected from client $(calling_station). Possible Brute Force attack.</description>
-    <mitre>
-      <id>T1110</id>
-    </mitre>
-    <group>authentication_failures,attack,gdpr_IV_35.7.d,hipaa_164.312.b,nist_800_53_AU.14,nist_800_53_AC.7,pci_dss_10.2.4,pci_dss_10.2.5,tsc_CC6.1,tsc_CC6.8,</group>
-  </rule>
-
-</group> ```
-
-### 4.3. Restart Wazuh Manager
-
-Apply the Wazuh configuration changes.
-
-**Action:** Validate configuration and restart.
+### **4.2 Log Directory Permissions**
 
 ```bash
-# 1. Validate Wazuh configuration syntax
-sudo /var/ossec/bin/wazuh-analysisd -t -c /var/ossec/etc/ossec.conf
-# Look for "Configuration OK"
+sudo chown -R root:wazuh /var/log/freeradius
+sudo chmod 750 /var/log/freeradius
+sudo chmod g+r /var/log/freeradius/radius.log
+sudo chmod g+r /var/log/freeradius/wazuh-radius.json
+```
 
-# 2. If validation passes, restart the Wazuh Manager service
+***
+
+## **5. Wazuh Manager Configuration**
+
+### **5.1 Custom Decoders**
+
+File: `/var/ossec/etc/decoders/local_decoder.xml` (on Wazuh Manager)
+
+```xml
+<!-- Decoders for FreeRADIUS -->
+<decoder name="freeradius_auth">
+  <prematch>Auth: \((\d+)\)\s+Login OK</prematch>
+</decoder>
+
+<decoder name="freeradius_auth_fail">
+  <prematch>Auth: \((\d+)\)\s+Login incorrect</prematch>
+</decoder>
+
+<decoder name="FREERADIUS_OK">
+  <parent>freeradius_auth</parent>
+  <regex>Login OK: \[(\S+)\] \(from client (\S+)</regex>
+  <order>username, authenticator</order>
+</decoder>
+
+<decoder name="FREERADIUS_FAIL">
+  <parent>freeradius_auth_fail</parent>
+  <regex>Login incorrect \((\S+): .*: \[(\S+)/.* \(from client (\S+)</regex>
+  <order>eap_method, username, authenticator</order>
+</decoder>
+```
+
+### **5.2 Custom Rules**
+
+File: `/var/ossec/etc/rules/local_rules.xml` (on Wazuh Manager)
+
+```xml
+<!-- Rules for FreeRADIUS -->
+<group name="freeradius_auth,">
+  <rule id="100100" level="3">
+    <if_sid>5700</if_sid>
+    <match>freeradius</match>
+    <description>FreeRADIUS authentication event detected.</description>
+  </rule>
+  
+  <rule id="100101" level="5">
+    <if_sid>100100</if_sid>
+    <decoded_as>FREERADIUS_OK</decoded_as>
+    <description>FreeRADIUS: Successful login for user $(username).</description>
+    <group>authentication_success,pci_dss_10.2.5,</group>
+  </rule>
+  
+  <rule id="100102" level="10">
+    <if_sid>100100</if_sid>
+    <decoded_as>FREERADIUS_FAIL</decoded_as>
+    <description>FreeRADIUS: Failed login for user $(username).</description>
+    <group>authentication_failed,pci_dss_10.2.4,pci_dss_10.2.5,</group>
+  </rule>
+</group>
+```
+
+### **5.3 Restart Wazuh Manager**
+
+```bash
 sudo systemctl restart wazuh-manager
-
-# 3. Verify the service started correctly
-sudo systemctl status wazuh-manager
-# Look for "active (running)"
-# Check logs for errors: sudo grep -i -E "error|warning" /var/ossec/logs/ossec.log | tail -n 20
-````
-
-## 5\. Phase 3: Validation
-
-Perform end-to-end testing specific to the JSON logging method.
-
-### 5.1. Execute Test Authentications via `radtest`
-
-Use `radtest` on the FreeRADIUS server itself (targeting `127.0.0.1`) to generate authentication events.
-
-**Action:** Run the following commands.
-
-```bash
-# 1. Simulate a FAILED login (should trigger Rule 200101)
-echo "Sending FAILED authentication request..."
-radtest testuser_bad badpassword 127.0.0.1 1812 testing123
-
-# Wait ~5-10 seconds
-
-# 2. Simulate a SUCCESSFUL login (should trigger Rule 200102)
-# IMPORTANT: Replace 'gooduser' and 'goodpassword' with ACTUAL valid credentials
-# echo "Sending SUCCESSFUL authentication request..."
-# radtest gooduser goodpassword 127.0.0.1 1812 testing123
-
-# Wait ~5-10 seconds
-
-# 3. Simulate a BRUTE FORCE attack (should trigger Rule 200103 after 5th failure)
-echo "Simulating BRUTE FORCE (sending 6 failed requests)..."
-for i in {1..6}; do
-  radtest testuser_bad badpassword 127.0.0.1 1812 testing123
-  sleep 2 # Short delay
-done
 ```
 
-### 5.2. Monitor Wazuh Alerts
+***
 
-Confirm that the correct alerts are generated in Wazuh.
+## **6. Validation and Testing**
 
-**Action:** Monitor the `alerts.json` file on the Wazuh Manager.
+### **6.1 Port Binding Verification**
 
 ```bash
-# Monitor alerts in real-time, filtering for the FreeRADIUS JSON rules
-echo "Monitoring Wazuh alerts for FreeRADIUS JSON events (Ctrl+C to stop)..."
-sudo tail -f /var/ossec/logs/alerts/alerts.json | jq 'select(.rule.id >= 200100 and .rule.id <= 200103)'
+sudo ss -tuln | grep -E '1812|1813'
 ```
 
-**Expected Results & Verification:**
+Expected output: FreeRADIUS bound to 127.0.0.1:1812 and 127.0.0.1:1813
 
-1.  **After Failed Login:** An alert with `rule.id: 200101` (Level 8) should appear.
-2.  **After Successful Login:** An alert with `rule.id: 200102` (Level 3) should appear.
-3.  **After Brute Force Simulation:** After the 5th failure, an alert with `rule.id: 200103` (Level 10) should appear.
-4.  **Log File:** `/var/log/freeradius/wazuh-radius.json` should contain JSON entries for each test.
+### **6.2 Decoder Testing**
 
------
+```bash
+echo 'Oct 10 00:00:00 host freeradius: Auth: (123) Login OK: [user123] (from client localhost port 0)' | sudo /var/ossec/bin/wazuh-logtest
+```
 
-## References
+```bash
+echo 'Oct 10 00:01:00 host freeradius: Auth: (124) Login incorrect (mschap): [user456] (from client localhost port 0)' | sudo /var/ossec/bin/wazuh-logtest
+```
 
-  * Wazuh Documentation - JSON Decoders & Log Collection (`https://documentation.wazuh.com/`)
-  * FreeRADIUS Documentation - `rlm_linelog` Module, `sites-available/default`, `clients.conf` (`https://freeradius.org/documentation/`)
+### **6.3 Service Status**
 
------
+```bash
+sudo systemctl status freeradius wazuh-manager
+```
 
-### Author
+### **6.4 Log Monitoring**
 
-**Bruno Rubens Flausino Teixeira**
-*Wazuh SOC Enterprise Lab - Authentication Stack*
+```bash
+sudo tail -f /var/log/freeradius/radius.log /var/log/syslog
+```
+
+### **6.5 Authentication Test**
+
+```bash
+radtest testuser testpassword 127.0.0.1 1812 testing123
+```
+
+***
+
+## **7. Verification Results**
+
+- FreeRADIUS service binds to localhost only (127.0.0.1 and ::1)
+- EAP-TLS is the default EAP method (TLS 1.2 minimum)
+- Snakeoil certificates used for testing (replace with proper CA for production)
+- Wazuh agent collects syslog, journald, and JSON-formatted logs
+- Log permissions restrict access to root and wazuh group
+- Decoders extract username, authenticator, and eap_method fields
+- Rules generate alerts for authentication success (100101) and failure (100102)
+- Alerts include PCI-DSS compliance tagging (10.2.4, 10.2.5)
+
+***
+
+**END OF METHODOLOGY**
+
+[1](https://www.zerozone.it/cybersecurity/how-to-add-freeradius-logs-in-wazuh-siem/23460)
+[2](https://www.linkedin.com/pulse/integrating-freeradius-logs-our-favorite-siem-wazuh-gonzalez-diaz-grggf)
+[3](https://wazuh.com/blog/leveraging-artificial-intelligence-for-threat-hunting-in-wazuh/)
+[4](https://www.miniorange.com/iam/integrations/wazuh-siem-integration)
+[5](https://www.scribd.com/document/758834969/Lab-14-Wazuh-pfsense-firewall-integration)
+[6](https://techjunction.co/download/practical-guide-to-wazuh-siem-windows-active-directory-for-it-security-professionals/)
+[7](https://kifarunix.com/install-freeradius-with-daloradius-on-debian-9/)

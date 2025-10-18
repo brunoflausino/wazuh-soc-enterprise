@@ -1,421 +1,333 @@
-# FreeRADIUS Integration with Wazuh
+# FreeRADIUS Integration with Wazuh (JSON/Linelog Method - Complete & Hardened)
 
-## Overview
-This document covers the FreeRADIUS server deployment and the methodology used to collect FreeRADIUS telemetry into Wazuh, add decoders & rules, validate the pipeline and harden log handling. This file **only** describes the RADIUS server component (FreeRADIUS) — the TLS proxy (radsecproxy) is documented separately.
+## 1. Abstract
 
----
+This document details the complete, end-to-end integration of FreeRADIUS 3.x with Wazuh SIEM, synthesizing best practices from provided technical reports. This methodology represents a robust and secure approach, combining:
 
-## Lab environment (validated)
-- OS: Ubuntu 24.04 LTS (x86_64)
-- FreeRADIUS: 3.x (package install used in lab)
-- Wazuh Manager: 4.x (single-node lab)
-- Logger, curl, ss, jq available for testing
+1.  **Hardened Security:** FreeRADIUS is configured to listen *only* on the localhost interface (`127.0.0.1` and `::1`), significantly reducing its direct network exposure. This configuration is suitable for scenarios where authentication requests are received locally (e.g., from local applications, test tools, or a dedicated proxy service documented elsewhere).
+2.  **Modern JSON Logging:** Utilizes the FreeRADIUS `rlm_linelog` module to output structured JSON logs directly to a file. This method leverages Wazuh's native JSON decoding, ensuring reliable parsing and resilience against log format changes compared to regex-based syslog methods.
+3.  **Critical Logging Fix:** Incorporates the mandatory configuration step to explicitly invoke the JSON logging module within the `Post-Auth-Type REJECT` block. This ensures that failed authentication attempts (`Access-Reject`) are reliably logged, addressing a common configuration oversight.
 
----
+This guide provides reproducible steps for configuration, Wazuh integration, and validation specific to this JSON-based approach.
 
-## 1) Goals
-- Collect authentication and accounting events from FreeRADIUS into Wazuh.
-- Provide structured (best-effort JSON) and plain-text ingestion paths.
-- Deploy decoders and rules for success/failure detection.
-- Keep log permissions safe and maintainable.
+## 2. System Environment
 
----
+* **Operating System**: Ubuntu 24.04 LTS
+* **FreeRADIUS**: 3.2.5 (or compatible 3.x version)
+* **Wazuh SIEM**: 4.x (Tested with 4.13.1)
 
-## 2) Installation & basic configuration
+## 3. Phase 1: FreeRADIUS Configuration
 
-### Install FreeRADIUS
+This phase focuses on hardening FreeRADIUS network listeners and configuring reliable JSON logging for all authentication outcomes.
+
+### 3.1. Configure Module for JSON Logging (`wazuh_json`)
+
+Define a dedicated `linelog` module instance to format authentication events into JSON objects suitable for Wazuh.
+
+**Action:** Create/Edit the module configuration file.
+
 ```bash
-sudo apt update
-sudo apt install -y freeradius
-sudo systemctl enable --now freeradius
-sudo systemctl status freeradius
+sudo nano /etc/freeradius/3.0/mods-available/wazuh_json
 ````
 
-### Bind to loopback (recommended)
-
-Edit `/etc/freeradius/3.0/sites-enabled/default` (listener sections) so it listens on `127.0.0.1` (and optionally `::1`) for auth/acct unless external access is required.
-
-### Clients example (`/etc/freeradius/3.0/clients.conf`)
+**Content:** Paste the following configuration.
 
 ```text
+# FreeRADIUS Linelog Module Instance for Wazuh JSON Output
+# File: /etc/freeradius/3.0/mods-available/wazuh_json
+
+linelog wazuh_json {
+  filename = /var/log/freeradius/wazuh-radius.json
+  permissions = 0640
+  format = "{\"event\":\"radius\",\"timestamp\":\"%{%{Event-Timestamp}:-%l}\",\"result\":\"%{%{reply:Packet-Type}:-unknown}\",\"user\":\"%{%{User-Name}:-unknown}\",\"calling_station\":\"%{%{Calling-Station-Id}:-unknown}\",\"called_station\":\"%{%{Called-Station-Id}:-unknown}\",\"nas_ip\":\"%{%{NAS-IP-Address}:-unknown}\",\"nas_identifier\":\"%{%{NAS-Identifier}:-unknown}\",\"service\":\"%{%{Service-Type}:-unknown}\",\"protocol\":\"%{%{Protocol}:-unknown}\",\"auth_type\":\"%{%{Auth-Type}:-none}\",\"reply_message\":\"%{%{Reply-Message}:-none}\",\"error_cause\":\"%{%{Error-Cause}:-none}\"}"
+  escape_string = json
+}
+```
+
+**Action:** Enable the newly defined module.
+
+```bash
+sudo ln -sf /etc/freeradius/3.0/mods-available/wazuh_json /etc/freeradius/3.0/mods-enabled/wazuh_json
+```
+
+### 3.2. Configure `clients.conf` (Hardening)
+
+Restrict FreeRADIUS to accept connections *only* from the local machine (`127.0.0.1` and `::1`).
+
+**Action:** Edit the clients configuration file.
+
+```bash
+sudo nano /etc/freeradius/3.0/clients.conf
+```
+
+**Content:** Ensure only localhost clients are defined and active.
+
+```conf
+# Define the client connecting from localhost IPv4
 client localhost {
-  ipaddr = 127.0.0.1
-  secret = testing123
-  require_message_authenticator = no
-  nas_type = other
+    ipaddr = 127.0.0.1
+    secret = testing123  # IMPORTANT: Use a strong, unique secret in production!
+    require_message_authenticator = no # Often needed for local testing
+    nastype = other
 }
-```
 
----
-
-## 3) Logging strategy
-
-### Default log locations (lab)
-
-* Plain text: `/var/log/freeradius/radius.log`
-* Optionally emit structured JSON to: `/var/log/freeradius/wazuh-radius.json` (via rlm_python/rlm_detail or custom post-auth hook)
-
-### Ensure rotation and permissions
-
-Create a logrotate policy `/etc/logrotate.d/freeradius`:
-
-```text
-/var/log/freeradius/*.log {
-  weekly
-  rotate 12
-  compress
-  missingok
-  notifempty
-  create 0640 root wazuh
+# Define the client connecting from localhost IPv6
+client localhost_ipv6 {
+    ipv6addr = ::1
+    secret = testing123  # IMPORTANT: Use the same strong secret!
 }
+
+# Ensure any default 'client 0.0.0.0/0' or other wide-open clients are REMOVED or COMMENTED OUT.
 ```
 
-Set permissions so Wazuh (group `wazuh`) can read logs:
+### 3.3. Configure `sites-enabled/default` (Hardening & Critical Reject Fix)
+
+Modify the main virtual server configuration to:
+(A) Bind the server's network listeners exclusively to localhost IPs.
+(B) Ensure the `wazuh_json` logging module is invoked correctly for *both* `Access-Accept` and `Access-Reject` outcomes.
+
+**Action:** Edit the primary site configuration file.
 
 ```bash
-sudo chown -R root:wazuh /var/log/freeradius
-sudo chmod 750 /var/log/freeradius
-sudo chmod g+r /var/log/freeradius/radius.log
+sudo nano /etc/freeradius/3.0/sites-available/default # Adjust if using a different site name
 ```
 
----
+**Content Modifications:**
 
-## 4) Wazuh Manager collection (ossec.conf)
+**A. Bind Listeners to Localhost:** Locate the `listen` blocks within `server default { ... }`.
 
-Add these `localfile` entries on the Manager:
-
-```xml
-<!-- FreeRADIUS plain log -->
-<localfile>
-  <log_format>syslog</log_format>
-  <location>/var/log/freeradius/radius.log</location>
-  <only-future-events>no</only-future-events>
-</localfile>
-
-<!-- Optional structured JSON log -->
-<localfile>
-  <log_format>json</log_format>
-  <location>/var/log/freeradius/wazuh-radius.json</location>
-  <label key="@source">freeradius-json</label>
-  <only-future-events>yes</only-future-events>
-</localfile>
-```
-
-After editing, restart Wazuh:
-
-```bash
-sudo /var/ossec/bin/wazuh-analysisd -t
-sudo systemctl restart wazuh-manager
-```
-
----
-
-## 5) Example decoders (local_decoder.xml)
-
-Place under `/var/ossec/etc/decoders/local_decoder.xml` (adapt regex to your log format):
-
-```xml
-<decoders>
-  <decoder name="freeradius-parent">
-    <program_name>freeradius|radiusd</program_name>
-  </decoder>
-
-  <decoder name="freeradius-auth-ok">
-    <parent>freeradius-parent</parent>
-    <prematch type="pcre2">Auth:.*Login OK</prematch>
-    <regex type="pcre2">
-      Auth:\s*\(\d+\)\s*Login OK:\s*\[([^\]]+)\]\s*\(from client\s+(\S+)\)
-    </regex>
-    <order>username,client</order>
-  </decoder>
-
-  <decoder name="freeradius-auth-fail">
-    <parent>freeradius-parent</parent>
-    <prematch type="pcre2">Auth:.*Login incorrect</prematch>
-    <regex type="pcre2">
-      Auth:\s*\(\d+\)\s*Login incorrect.*\:\s*\[([^\]]+)\]\s*\(from client\s+(\S+)\)
-    </regex>
-    <order>username,client</order>
-  </decoder>
-</decoders>
-```
-
-Test with `wazuh-logtest`.
-
----
-
-## 6) Example rules (local_rules.xml)
-
-Add to `/var/ossec/etc/rules/local_rules.xml`. Choose IDs that don't conflict with your environment.
-
-```xml
-<group name="freeradius_auth,">
-  <rule id="110010" level="3">
-    <if_decoder name="freeradius-auth-ok" />
-    <description>RADIUS login OK: $(username) from $(client)</description>
-    <group>local,auth,freeradius,authentication_success</group>
-  </rule>
-
-  <rule id="110011" level="8">
-    <if_decoder name="freeradius-auth-fail" />
-    <description>RADIUS login FAIL: $(username) from $(client)</description>
-    <group>local,auth,freeradius,authentication_fail</group>
-  </rule>
-</group>
-```
-
-Then:
-
-```bash
-sudo /var/ossec/bin/wazuh-analysisd -t
-sudo systemctl restart wazuh-manager
-```
-
----
-
-## 7) Testing & validation
-
-### Simulate log lines (append to radius.log)
-
-```bash
-# Success
-echo 'Oct 17 00:00:00 hostname freeradius: Auth: (123) Login OK: [user1] (from client localhost)' | sudo tee -a /var/log/freeradius/radius.log
-
-# Failure
-echo 'Oct 17 00:00:10 hostname freeradius: Auth: (124) Login incorrect (mschap): [user2] (from client localhost)' | sudo tee -a /var/log/freeradius/radius.log
-```
-
-### Verify via logtest
-
-```bash
-sudo /var/ossec/bin/wazuh-logtest
-# paste the log line above (one line), then Ctrl+D. Confirm the matching rule id.
-```
-
-### Verify archives & alerts
-
-```bash
-sudo egrep -n "Login OK|Login incorrect" /var/ossec/logs/archives/archives.json | tail -n 10
-sudo jq -c 'select(.rule.id=="110010" or .rule.id=="110011")' /var/ossec/logs/alerts/alerts.json | tail -n 20
-```
-
----
-
-## 8) Troubleshooting
-
-* If no events: confirm file path in `ossec.conf` and permissions (`wazuh` group read).
-* If decoders fail: use `wazuh-logtest` to inspect decoding stages and refine regex/prematch.
-* If `alerts.json` corrupted: extract valid JSON lines to a `.fixed` file as a temporary workaround (small Python snippet can do this).
-* If FreeRADIUS not starting: check `sudo journalctl -u freeradius -n 200`.
-
----
-
-## 9) Hardening & operational notes
-
-* Bind FreeRADIUS to loopback if external access not required.
-* Use proper secrets management for shared client secrets; rotate keys periodically.
-* If you generate JSON logs from FreeRADIUS, prefer structured fields to make rules robust.
-* Keep certs and keys secure if using EAP/TLS.
-
----
-
-## Author
-
-**Bruno Rubens Flausino Teixeira**
-Wazuh SOC Enterprise Lab — Authentication Stack
-
-````
-
----
-
-## 2) File: `integrations/authentication/radsecproxy-integration.md`
-```markdown
-# radsecproxy Integration with FreeRADIUS & Wazuh
-
-## Overview
-This document focuses on **radsecproxy** — a proxy that provides TLS wrapping for RADIUS (RadSec). radsecproxy is independent from FreeRADIUS and its purpose is to accept RADIUS-over-TLS connections and forward them to one or more backend RADIUS servers (like FreeRADIUS). This file documents radsecproxy deployment, TLS considerations, forwarding configuration, and log integration into Wazuh.
-
----
-
-## Lab environment (validated)
-- OS: Ubuntu 24.04 LTS
-- radsecproxy: built from upstream source or installed from package (if available)
-- Backends: FreeRADIUS on `127.0.0.1:1812` (auth) and `1813` (acct)
-- Wazuh Manager: collects radsecproxy logs (stdout/stderr or file)
-
----
-
-## 1) What radsecproxy does (summary)
-- Terminates TLS for RADIUS client connections (RadSec).
-- Validates client certificates (optional) and performs mutual TLS if desired.
-- Forwards decrypted RADIUS packets to backend RADIUS servers (UDP/TCP).
-- Emits runtime logs (useful for debugging connection/TLS issues).
-
----
-
-## 2) Installation (from source)
-```bash
-sudo apt update
-sudo apt install -y git make gcc libssl-dev libprotobuf-c-dev protobuf-c-compiler
-git clone https://github.com/radsecproxy/radsecproxy.git /tmp/radsecproxy
-cd /tmp/radsecproxy
-make
-sudo make install
-# radsecproxy usually installs to /usr/local/sbin/radsecproxy
-````
-
----
-
-## 3) Minimal config example (`/etc/radsecproxy/radsecproxy.conf`)
-
-```text
+```conf
 server default {
-  listen {
-    type = auth
-    ipaddr = 0.0.0.0
-    port = 2083
-    tls {
-      cert = /etc/radsecproxy/certs/server-cert.pem
-      key  = /etc/radsecproxy/private/server-key.pem
-      ca   = /etc/radsecproxy/certs/ca.pem
-      clientcert = optional
+    # --- Listener Configuration (Hardening) ---
+    listen {
+        type = auth
+        ipaddr = 127.0.0.1      # Listen ONLY on localhost IPv4
+        port = 1812
     }
-  }
-}
+    listen {
+        type = acct
+        ipaddr = 127.0.0.1      # Listen ONLY on localhost IPv4
+        port = 1813
+    }
+    # IPv6 Listeners (Optional - configure or disable)
+    listen {
+        type = auth
+        ipv6addr = ::1          # Listen ONLY on localhost IPv6
+        port = 0                # Set to 0 to disable IPv6 listener
+    }
+    listen {
+        type = acct
+        ipv6addr = ::1          # Listen ONLY on localhost IPv6
+        port = 0                # Set to 0 to disable IPv6 listener
+    }
+    # --- End Listener Configuration ---
 
-targets {
-  radius-backend {
-    host = 127.0.0.1
-    port = 1812
-    type = radius
-  }
-  accounting-backend {
-    host = 127.0.0.1
-    port = 1813
-    type = radius
-  }
-}
+    # ... (authorize, authenticate, etc. sections remain) ...
 
-mappings {
-  clientproto => radius-backend
-  accountingproto => accounting-backend
-}
+    # --- Post-Authentication Logging Configuration (Includes CRITICAL FIX) ---
+    post-auth {
+        # Log successful authentications (Access-Accept)
+        wazuh_json
+
+        # --- Sub-section for handling Access-Reject packets ---
+        Post-Auth-Type REJECT {
+            # CRITICAL FIX: Explicitly log failed authentications (Access-Reject)
+            wazuh_json
+        }
+        # --- End REJECT sub-section ---
+    }
+    # --- End Post-Authentication Logging ---
+
+    # ... rest of server configuration ...
+} # End server default
 ```
 
----
+### 3.4. Set Log File Permissions
 
-## 4) TLS & certificates
+Ensure the FreeRADIUS process can write to the log file, and the Wazuh agent user (`wazuh`) can read it.
 
-* Prefer CA-signed certificates; for lab testing self-signed certs are acceptable.
-* Protect private keys (`chmod 640`, owned by root).
-* If mutual TLS is required, set `clientcert = required` and ensure client certs exist and are signed by the configured CA.
-
----
-
-## 5) Logging & Wazuh collection
-
-radsecproxy usually logs to stdout/stderr. In systemd-managed installations, collect via journald or redirect to a file.
-
-### Journald collection
-
-Ensure Wazuh collects `journald` and filters `SYSLOG_IDENTIFIER` or unit name:
-
-```xml
-<localfile>
-  <log_format>journald</log_format>
-  <location>journald</location>
-  <filter field="SYSLOG_IDENTIFIER">radsecproxy</filter>
-  <only-future-events>yes</only-future-events>
-</localfile>
-```
-
-### File logging (alternative)
-
-Configure a systemd service that redirects stdout to a file such as `/var/log/radsecproxy/radsecproxy.log` then configure an ossec `localfile` for that path (syslog or json depending on format).
-
-Permissions:
+**Action:** Set ownership and permissions.
 
 ```bash
-sudo mkdir -p /var/log/radsecproxy
-sudo chown root:wazuh /var/log/radsecproxy
-sudo chmod 750 /var/log/radsecproxy
+# 1. Ensure the log file exists
+sudo touch /var/log/freeradius/wazuh-radius.json
+# 2. Set ownership to the FreeRADIUS user and group (usually freerad:freerad)
+sudo chown freerad:freerad /var/log/freeradius/wazuh-radius.json
+# 3. Set permissions: Owner=rw, Group=r, Other=
+sudo chmod 0640 /var/log/freeradius/wazuh-radius.json
+# 4. Add the 'wazuh' user to the 'freerad' group for read access
+sudo usermod -a -G freerad wazuh
 ```
 
----
+### 3.5. Restart FreeRADIUS Service
 
-## 6) Example Wazuh decoders & rules (recommendation)
+Apply all configuration changes.
 
-Radsecproxy logs typically contain TLS handshake status, client CN, remote IP, and forwarding status. Create lightweight rules to detect:
-
-* TLS handshake failures
-* Invalid client certificate attempts
-* Backend forwarding errors
-* Unexpected rate of connections (possible scanning)
-
-Example rule snippet (place in `local_rules.xml`):
-
-```xml
-<group name="radsecproxy,">
-  <rule id="111000" level="7">
-    <match>TLS handshake failed|handshake error|certificate verify failed</match>
-    <description>radsecproxy: TLS handshake failure</description>
-    <group>radsecproxy,tls,error</group>
-  </rule>
-
-  <rule id="111001" level="6">
-    <match>Forwarding error|no available backends|failed to send</match>
-    <description>radsecproxy: Forwarding to backend RADIUS failed</description>
-    <group>radsecproxy,radsec,backend</group>
-  </rule>
-
-  <rule id="111002" level="4">
-    <match>New connection from</match>
-    <description>radsecproxy: New client connection</description>
-    <group>radsecproxy,connection</group>
-  </rule>
-</group>
-```
-
-Test with `wazuh-logtest` using a sample radsecproxy log line.
-
----
-
-## 7) Testing & validation
-
-1. Start radsecproxy in foreground for debugging:
+**Action:** Check syntax and restart.
 
 ```bash
-sudo /usr/local/sbin/radsecproxy -c /etc/radsecproxy/radsecproxy.conf -n
-# or systemctl start radsecproxy
+# 1. Perform a syntax check
+sudo freeradius -C
+# Look for "Configuration appears to be OK."
+
+# 2. If syntax is OK, restart the service
+sudo systemctl restart freeradius.service
+
+# 3. Verify the service started correctly
+sudo systemctl status freeradius.service
+# Look for "active (running)"
 ```
 
-2. From a client, attempt a RadSec connection (use radclient variants that support TLS or openssl s_client to test the socket).
+## 4\. Phase 2: Wazuh Manager Configuration (JSON)
 
-3. Confirm logs appear in journald or the configured file and that Wazuh ingests them.
+Configure the Wazuh Manager to collect, automatically decode, and alert on the structured JSON logs.
 
-4. Verify alerts in Wazuh for TLS errors or forwarding issues.
+### 4.1. Configure Log Collection (`ossec.conf`)
 
----
+Instruct the Wazuh Manager to monitor the FreeRADIUS JSON log file.
 
-## 8) Hardening & operational notes
+**Action:** Add a `<localfile>` block to `/var/ossec/etc/ossec.conf`.
 
-* Do not expose radsecproxy admin/troubleshooting interfaces publicly.
-* Place radsecproxy behind a hardened network perimeter (firewall, rate limits).
-* Monitor TLS certificate expiry and automate renewal.
-* Log retention & rotation: place radsecproxy logs under `/var/log/radsecproxy` and rotate via logrotate. Ensure Wazuh can read rotated files.
-* Use client certificate validation for higher assurance (set `clientcert = required`).
+```xml
+<ossec_config>
 
----
+  <localfile>
+    <log_format>json</log_format>
+    <location>/var/log/freeradius/wazuh-radius.json</location>
+    <label key="@source">freeradius-json</label> <only-future-events>yes</only-future-events>
+  </localfile>
 
-## 9) Separation of responsibilities
+  </ossec_config>
+```
 
-* FreeRADIUS handles authentication/accounting and policy: keep its config and clients.conf separate and apply RADIUS-specific hardening.
-* radsecproxy acts as TLS front-end / multiplexer: focus on TLS, certs, rate limiting, and forwarding policies.
-* Both produce different types of logs: collect both in Wazuh and tune decoders/rules accordingly.
+### 4.2. Add Custom Rules (`local_rules.xml`)
 
----
+Define Wazuh rules specifically for the JSON log format produced by the `wazuh_json` module.
 
-## Author
+**Action:** Add the following rule group to `/var/ossec/etc/rules/local_rules.xml`.
+
+````xml
+<group name="local,freeradius,radius,authentication,">
+
+  <rule id="200100" level="0">
+    <decoded_as>json</decoded_as>
+    <field name="event">radius</field>
+    <description>FreeRADIUS: JSON Authentication event received.</description>
+  </rule>
+
+  <rule id="200101" level="8">
+    <if_sid>200100</if_sid>
+    <field name="result">Access-Reject</field>
+    <description>FreeRADIUS: Authentication Rejected for user $(user) from client $(calling_station).</description>
+    <mitre>
+      <id>T1110</id> <id>T1078</id>
+    </mitre>
+    <group>authentication_failed,gdpr_IV_35.7.d,hipaa_164.312.b,nist_800_53_AU.14,nist_800_53_AC.7,pci_dss_10.2.4,pci_dss_10.2.5,tsc_CC6.1,tsc_CC6.8,</group>
+  </rule>
+
+  <rule id="200102" level="3">
+    <if_sid>200100</if_sid>
+    <field name="result">Access-Accept</field>
+    <description>FreeRADIUS: Authentication Successful for user $(user) from client $(calling_station).</description>
+    <mitre>
+      <id>T1078</id>
+    </mitre>
+    <group>authentication_success,gdpr_IV_32.2,hipaa_164.312.b,nist_800_53_AU.14,nist_800_53_AC.7,pci_dss_10.2.5,tsc_CC6.1,tsc_CC6.8,</group>
+  </rule>
+
+  <rule id="200103" level="10" frequency="5" timeframe="300" context="correlation">
+    <if_matched_sid>200101</if_matched_sid>
+    <same_field>calling_station</same_field>
+    <description>FreeRADIUS: Multiple authentication failures detected from client $(calling_station). Possible Brute Force attack.</description>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+    <group>authentication_failures,attack,gdpr_IV_35.7.d,hipaa_164.312.b,nist_800_53_AU.14,nist_800_53_AC.7,pci_dss_10.2.4,pci_dss_10.2.5,tsc_CC6.1,tsc_CC6.8,</group>
+  </rule>
+
+</group> ```
+
+### 4.3. Restart Wazuh Manager
+
+Apply the Wazuh configuration changes.
+
+**Action:** Validate configuration and restart.
+
+```bash
+# 1. Validate Wazuh configuration syntax
+sudo /var/ossec/bin/wazuh-analysisd -t -c /var/ossec/etc/ossec.conf
+# Look for "Configuration OK"
+
+# 2. If validation passes, restart the Wazuh Manager service
+sudo systemctl restart wazuh-manager
+
+# 3. Verify the service started correctly
+sudo systemctl status wazuh-manager
+# Look for "active (running)"
+# Check logs for errors: sudo grep -i -E "error|warning" /var/ossec/logs/ossec.log | tail -n 20
+````
+
+## 5\. Phase 3: Validation
+
+Perform end-to-end testing specific to the JSON logging method.
+
+### 5.1. Execute Test Authentications via `radtest`
+
+Use `radtest` on the FreeRADIUS server itself (targeting `127.0.0.1`) to generate authentication events.
+
+**Action:** Run the following commands.
+
+```bash
+# 1. Simulate a FAILED login (should trigger Rule 200101)
+echo "Sending FAILED authentication request..."
+radtest testuser_bad badpassword 127.0.0.1 1812 testing123
+
+# Wait ~5-10 seconds
+
+# 2. Simulate a SUCCESSFUL login (should trigger Rule 200102)
+# IMPORTANT: Replace 'gooduser' and 'goodpassword' with ACTUAL valid credentials
+# echo "Sending SUCCESSFUL authentication request..."
+# radtest gooduser goodpassword 127.0.0.1 1812 testing123
+
+# Wait ~5-10 seconds
+
+# 3. Simulate a BRUTE FORCE attack (should trigger Rule 200103 after 5th failure)
+echo "Simulating BRUTE FORCE (sending 6 failed requests)..."
+for i in {1..6}; do
+  radtest testuser_bad badpassword 127.0.0.1 1812 testing123
+  sleep 2 # Short delay
+done
+```
+
+### 5.2. Monitor Wazuh Alerts
+
+Confirm that the correct alerts are generated in Wazuh.
+
+**Action:** Monitor the `alerts.json` file on the Wazuh Manager.
+
+```bash
+# Monitor alerts in real-time, filtering for the FreeRADIUS JSON rules
+echo "Monitoring Wazuh alerts for FreeRADIUS JSON events (Ctrl+C to stop)..."
+sudo tail -f /var/ossec/logs/alerts/alerts.json | jq 'select(.rule.id >= 200100 and .rule.id <= 200103)'
+```
+
+**Expected Results & Verification:**
+
+1.  **After Failed Login:** An alert with `rule.id: 200101` (Level 8) should appear.
+2.  **After Successful Login:** An alert with `rule.id: 200102` (Level 3) should appear.
+3.  **After Brute Force Simulation:** After the 5th failure, an alert with `rule.id: 200103` (Level 10) should appear.
+4.  **Log File:** `/var/log/freeradius/wazuh-radius.json` should contain JSON entries for each test.
+
+-----
+
+## References
+
+  * Wazuh Documentation - JSON Decoders & Log Collection (`https://documentation.wazuh.com/`)
+  * FreeRADIUS Documentation - `rlm_linelog` Module, `sites-available/default`, `clients.conf` (`https://freeradius.org/documentation/`)
+
+-----
+
+### Author
 
 **Bruno Rubens Flausino Teixeira**
-Wazuh SOC Enterprise Lab — Authentication Stack
+*Wazuh SOC Enterprise Lab - Authentication Stack*

@@ -1,341 +1,459 @@
-# Restic Backup Integration with Wazuh (Agentless)
+# **Restic Backup Integration with Wazuh (Agentless)**
 
-This document provides a complete, reproducible methodology for installing Restic, configuring automated backups via Systemd, and monitoring the backup job logs directly from the Wazuh manager using the `localfile` capability (agentless monitoring).
+## **1. Overview**
 
-This integration is designed for a setup where Restic and the Wazuh Manager are running on the same host (e.g., the SIEM server backing itself up).
+This guide provides a complete, step-by-step methodology for installing **Restic**, configuring automated backups via **Systemd**, and monitoring the backup job logs directly from the **Wazuh Manager** using its `localfile` capability. This setup assumes Restic and the Wazuh Manager are running on the same host (agentless monitoring).
 
-## 1. Prerequisites
+The primary objective is to create a reliable backup process and ensure its execution (success or failure) is logged and visible within the Wazuh SIEM for auditing and alerting purposes.
 
-* [cite_start]**OS:** Ubuntu 24.04 LTS [cite: 1158]
-* [cite_start]**Wazuh:** A Wazuh Manager (v4.x or later) must be installed and running on the host. [cite: 1161]
-* **Access:** Sudo/root privileges are required.
+## **2. System Environment**
 
----
-
-## 2. Part 1: Restic Installation
-
-### 2.1 Install Dependencies
-
-Update the system and install necessary tools for downloading and verifying Restic.
-```bash
-sudo apt-get update -y
-sudo apt-get install -y curl wget jq bzip2 coreutils ca-certificates
-````
-
-[cite\_start][cite: 1169, 1170]
-
-### 2.2 Download and Install Restic
-
-This method downloads the latest stable release, verifies its checksum, and installs the binary.
-
-```bash
-# Get the latest stable version tag (e.g., 0.18.0)
-LATEST_TAG=$(curl -fsSL [https://api.github.com/repos/restic/restic/releases/latest](https://api.github.com/repos/restic/restic/releases/latest) \
-  | jq -r '.tag_name' | sed 's/^v//')
-
-# Set download variables
-BASE="[https://github.com/restic/restic/releases/download/v$](https://github.com/restic/restic/releases/download/v$){LATEST_TAG}"
-BIN="restic_${LATEST_TAG}_linux_amd64.bz2"
-SUMS="SHA256SUMS"
-TMPD=$(mktemp -d)
-
-cd "$TMPD"
-
-# Download the binary and checksums
-wget -q "${BASE}/${BIN}" "${BASE}/${SUMS}"
-
-# Verify the checksum
-grep "${BIN}$" "${SUMS}" | sha256sum -c
-
-# Decompress the binary
-bzip2 -d "${BIN}"
-
-# Install the binary
-sudo install -m 0755 -o root -g root "restic_${LATEST_TAG}_linux_amd64" /usr/local/bin/restic
-
-# Verify installation
-echo "Installed: $(restic version)"
-```
-
-[cite\_start][cite: 1172-1185]
+  * **Operating System:** Ubuntu 24.04 LTS
+  * **Wazuh:** Wazuh Manager (v4.x) installed and running on the host.
+  * **Privileges:** All commands require `sudo`.
+  * **Internet Access:** Required for downloading Restic from GitHub.
 
 -----
 
-## 3\. Part 2: Restic Repository Configuration
+## **3. Part 1: Restic Installation**
 
-### 3.1 Create Directory Structure
+This section covers downloading the official Restic binary, verifying its integrity, and installing it.
 
-Create the necessary directories for the repository, configuration, logs, and cache.
+### **3.1 Install Dependencies**
+
+Update the system and install necessary tools (`curl`, `wget`, `jq`, `bzip2`).
 
 ```bash
+sudo apt-get update -y
+sudo apt-get install -y curl wget jq bzip2 coreutils ca-certificates
+```
+
+### **3.2 Download and Install Restic**
+
+These commands fetch the latest stable release directly from GitHub, verify the download using SHA256 checksums, and install the binary to `/usr/local/bin/restic`.
+
+1.  **Determine Latest Version and Architecture:**
+
+    ```bash
+    # Get the latest stable version tag (e.g., 0.18.0)
+    LATEST_TAG=$(curl -fsSL https://api.github.com/repos/restic/restic/releases/latest \
+      | jq -r '.tag_name' | sed 's/^v//')
+
+    # Detect architecture (amd64 or arm64)
+    ARCH="amd64"
+    case "$(uname -m)" in
+      x86_64|amd64) ARCH="amd64" ;;
+      aarch64|arm64) ARCH="arm64" ;;
+      *) echo "ERROR: Unsupported architecture $(uname -m)"; exit 1 ;;
+    esac
+
+    echo "Latest Restic version: $LATEST_TAG"
+    echo "Detected architecture: $ARCH"
+    ```
+
+2.  **Download Binary and Checksums:**
+
+    ```bash
+    # Set download variables
+    BASE="https://github.com/restic/restic/releases/download/v${LATEST_TAG}"
+    BIN="restic_${LATEST_TAG}_linux_${ARCH}.bz2"
+    SUMS="SHA256SUMS"
+    SUMS_SIG="SHA256SUMS.asc" # GPG signature (optional verification)
+    TMPD=$(mktemp -d) # Create a temporary directory
+
+    cd "$TMPD"
+
+    # Download the binary and checksum files
+    echo "Downloading Restic binary and checksums..."
+    wget -q "${BASE}/${BIN}" "${BASE}/${SUMS}" "${BASE}/${SUMS_SIG}"
+    ```
+
+3.  **Verify Checksum:**
+
+    ```bash
+    echo "Verifying checksum..."
+    # Check the downloaded binary against the official checksum list
+    if grep " ${BIN}$" "${SUMS}" | sha256sum -c --strict --quiet -; then
+      echo "Checksum verification successful."
+    else
+      echo "ERROR: Checksum verification failed!"
+      cd ~
+      rm -rf "$TMPD"
+      exit 1
+    fi
+    ```
+
+4.  **Decompress and Install:**
+
+    ```bash
+    echo "Decompressing and installing Restic..."
+    # Decompress the binary
+    bzip2 -d "${BIN}"
+
+    # Install the binary to /usr/local/bin
+    sudo install -m 0755 -o root -g root "restic_${LATEST_TAG}_linux_${ARCH}" /usr/local/bin/restic
+    ```
+
+5.  **Verify Installation and Cleanup:**
+
+    ```bash
+    # Verify Restic is executable and print version
+    if command -v restic >/dev/null; then
+      echo "Restic installed successfully: $(restic version)"
+    else
+      echo "ERROR: Restic installation failed."
+      cd ~
+      rm -rf "$TMPD"
+      exit 1
+    fi
+
+    # Cleanup temporary directory
+    cd ~
+    rm -rf "$TMPD"
+    ```
+
+-----
+
+## **4. Part 2: Restic Repository Configuration**
+
+This section sets up the local directory structure, creates the repository password file, configures environment variables, and initializes the Restic repository.
+
+### **4.1 Create Directory Structure and Set Permissions**
+
+Create directories for the repository, configuration, logs, and cache, setting appropriate permissions.
+
+```bash
+# Create directories
 sudo mkdir -p /backup/restic /etc/restic /var/log/restic /var/cache/restic
-```
 
-[cite\_start][cite: 1191]
-
-### 3.2 Set Permissions
-
-Secure the directories appropriately.
-
-```bash
+# Set ownership and permissions
 sudo chown root:root /backup/restic /etc/restic /var/log/restic /var/cache/restic
-sudo chmod 755 /backup/restic /var/log/restic
-sudo chmod 750 /etc/restic
-sudo chmod 700 /var/cache/restic
+sudo chmod 755 /backup/restic /var/log/restic  # World-readable repo/log dirs
+sudo chmod 750 /etc/restic                     # Config readable only by root/group
+sudo chmod 700 /var/cache/restic               # Cache accessible only by root
 ```
 
-[cite\_start][cite: 1192-1195]
+### **4.2 Create Repository Password File**
 
-### 3.3 Create Repository Password
-
-Create a file to store the repository encryption password.
+Store the repository encryption password in a secure file. **Replace `change-this-secure-password-123` with a strong, unique password.**
 
 ```bash
+# Create the password file
 sudo tee /etc/restic/password >/dev/null <<'EOF'
 change-this-secure-password-123
 EOF
 
+# Set strict permissions (readable only by root)
 sudo chmod 600 /etc/restic/password
 ```
 
-[cite\_start][cite: 1197-1200]
+### **4.3 Create Environment File**
 
-### 3.4 Create Environment File
-
-Create a file to store Restic's environment variables for automation.
+Create a file (`/etc/restic/env`) to store environment variables used by Restic for automated runs.
 
 ```bash
 sudo tee /etc/restic/env >/dev/null <<'EOF'
+# Restic environment variables for backup script
 RESTIC_REPOSITORY=/backup/restic
 RESTIC_PASSWORD_FILE=/etc/restic/password
 RESTIC_CACHE_DIR=/var/cache/restic
 RESTIC_COMPRESSION=auto
 EOF
 
+# Set permissions (readable by root)
 sudo chmod 644 /etc/restic/env
 ```
 
-[cite\_start][cite: 1202-1208]
+### **4.4 Initialize Restic Repository**
 
-### 3.5 Initialize Restic Repository
-
-Source the environment file and initialize the repository *if* it doesn't already exist.
+Source the environment file and run `restic init` *only if* the repository hasn't been initialized yet.
 
 ```bash
+# Load environment variables into the current shell temporarily
 set -a; source /etc/restic/env; set +a
+
+# Check if repository exists by trying to read its config
 if ! restic cat config >/dev/null 2>&1; then
+  echo "Initializing Restic repository at $RESTIC_REPOSITORY..."
   restic init
+  echo "Repository initialized successfully."
+else
+  echo "Restic repository already initialized."
 fi
 ```
 
-[cite\_start][cite: 1210-1213]
-
 -----
 
-## 4\. Part 3: Systemd Backup Automation
+## **5. Part 3: Systemd Backup Automation**
 
-### 4.1 Create the Backup Script
+This section creates a script to perform the backup and configures Systemd Service and Timer units to run it automatically.
 
-This script sources the environment variables and runs the backup, logging all output to `/var/log/restic/backup.log`.
+### **5.1 Create the Backup Script**
+
+This script sources the Restic environment variables, runs the backup command (backing up `/etc` and `/home` in this example), applies a retention policy (`forget --prune`), and logs all output to `/var/log/restic/backup.log`.
 
 ```bash
 sudo tee /usr/local/bin/restic-backup.sh >/dev/null <<'EOF'
 #!/usr/bin/env bash
+# Script to perform Restic backup and log output
+
+# Fail on error, undefined variable, or pipe failure
 set -euo pipefail
 
+# Configuration
 LOG_DIR="/var/log/restic"
 LOG_FILE="${LOG_DIR}/backup.log"
 ENV_FILE="/etc/restic/env"
 
-# Ensure log directory and file exist
-mkdir -p "$LOG_DIR"; touch "$LOG_FILE"
-chmod 640 "$LOG_FILE"; chown root:root "$LOG_FILE"
+# --- Script Execution ---
 
-# Source environment variables
+# Ensure log directory and file exist with correct permissions
+mkdir -p "$LOG_DIR"
+touch "$LOG_FILE"
+chmod 640 "$LOG_FILE"
+chown root:root "$LOG_FILE" # Ensure root owns the log
+
+# Source Restic environment variables
+# 'set -a' exports them, 'set +a' stops exporting
 set -a; source "$ENV_FILE"; set +a
 
-TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+# Timestamp for logging
+TS=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 
-# Pipe all output to the log file
+# Group commands to redirect all stdout/stderr to the log file
 {
-  echo "[$TS] START backup"
-  restic version
+  echo "[$TS] START backup job"
+  echo "Restic version: $(restic version)"
   
-  # Run the backup (e.g., for /etc/ and /home/)
+  # --- Restic Backup Command ---
+  # Backup specified paths
+  # --one-file-system: Stay within the initial filesystem (e.g., don't cross mount points)
+  # --exclude-caches: Exclude common cache directories
+  # --exclude-if-present .nobackup: Skip directories containing a .nobackup file
+  echo "Starting backup for /etc /home ..." # Add/remove paths as needed
   restic backup \
     --one-file-system \
     --exclude-caches \
     --exclude-if-present .nobackup \
-    /etc/ /home/
+    /etc \
+    /home
+  
+  echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] Backup command finished. SNAPSHOT created."
 
-  echo "[$TS] SNAPSHOT created"
-
-  # Prune old snapshots (keep 7 daily, 4 weekly, 6 monthly)
+  # --- Restic Pruning Command ---
+  # Apply retention policy and remove old data
+  # --keep-daily 7: Keep the last 7 daily snapshots
+  # --keep-weekly 4: Keep the last 4 weekly snapshots (one per week)
+  # --keep-monthly 6: Keep the last 6 monthly snapshots (one per month)
+  # --prune: Remove data no longer referenced by kept snapshots
+  echo "Starting pruning process..."
   restic forget \
     --prune \
     --keep-daily 7 \
     --keep-weekly 4 \
     --keep-monthly 6
-
-  echo "[$TS] Pruning complete"
-  echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] FINISH backup OK"
   
-} >> "$LOG_FILE" 2>&1
+  echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] Pruning process finished."
+  
+  # Final success message
+  echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] FINISH backup job OK"
+
+} >> "$LOG_FILE" 2>&1 # Redirect stdout and stderr to the log file
+
 EOF
 
 # Make the script executable
 sudo chmod +x /usr/local/bin/restic-backup.sh
+echo "Backup script created at /usr/local/bin/restic-backup.sh"
 ```
 
-[cite\_start][cite: 1216-1234]
+### **5.2 Create Systemd Service File**
 
-### 4.2 Create Systemd Service File
-
-Create a service file to execute the backup script.
+This defines a `oneshot` service unit that runs the backup script.
 
 ```bash
 sudo tee /etc/systemd/system/restic-backup.service >/dev/null <<'EOF'
 [Unit]
-Description=Restic backup job
+Description=Restic Backup Job Service
+# Ensure network is available if backing up to remote target (adjust if local only)
 Wants=network-online.target
 After=network-online.target
 
 [Service]
 Type=oneshot
+# Run with lower priority
 Nice=10
+# Execute the backup script
 ExecStart=/usr/local/bin/restic-backup.sh
+# Run as root
 User=root
 Group=root
+
+[Install]
+# This service is typically started by the timer, not enabled directly
+# WantedBy=multi-user.target
 EOF
+
+echo "Systemd service file created at /etc/systemd/system/restic-backup.service"
 ```
 
-[cite\_start][cite: 1237-1244]
+### **5.3 Create Systemd Timer File**
 
-### 4.3 Create Systemd Timer File
-
-Create a timer to run the service daily at 02:30 AM, with a randomized delay.
+This defines a timer unit to trigger the `restic-backup.service` daily at 02:30 AM, with a random delay up to 10 minutes (600 seconds) to avoid thundering herd issues.
 
 ```bash
 sudo tee /etc/systemd/system/restic-backup.timer >/dev/null <<'EOF'
 [Unit]
-Description=Run restic backup daily at 02:30
+Description=Run Restic Backup Daily at 02:30 AM
 
 [Timer]
+# Run daily at 2:30 AM server time
 OnCalendar=*-*-* 02:30:00
+# Add random delay up to 10 minutes
 RandomizedDelaySec=600
+# If the machine was off, run at next boot if missed
 Persistent=true
 
 [Install]
+# Enable the timer to start on boot
 WantedBy=timers.target
 EOF
+
+echo "Systemd timer file created at /etc/systemd/system/restic-backup.timer"
 ```
 
-[cite\_start][cite: 1246-1252]
+### **5.4 Enable and Start the Timer**
 
-### 4.4 Enable the Timer
-
-Reload the systemd daemon and enable the timer.
+Reload the systemd configuration and enable the timer to start automatically on boot and begin its schedule.
 
 ```bash
+# Reload systemd manager configuration
 sudo systemctl daemon-reload
-sudo systemctl enable --now restic-backup.timer
-```
 
-[cite\_start][cite: 1253, 1254]
+# Enable the timer to start on boot and start it now
+sudo systemctl enable --now restic-backup.timer
+
+# Verify the timer is loaded and waiting
+sudo systemctl list-timers restic-backup.timer
+```
 
 -----
 
-## 5\. Part 4: Wazuh Manager Integration (Agentless)
+## **6. Part 4: Wazuh Manager Integration (Agentless)**
 
-This procedure configures the Wazuh Manager (on the *same* host) to monitor the Restic log file.
+This section configures the Wazuh Manager (running on the same host) to directly monitor the Restic log file created by the backup script.
 
-### 5.1 Configure `ossec.conf`
+### **6.1 Configure `ossec.conf`**
 
-1.  Edit the Wazuh Manager's configuration file:
+1.  **Backup Existing Configuration:**
+
+    ```bash
+    sudo cp /var/ossec/etc/ossec.conf /var/ossec/etc/ossec.conf.bak_restic_$(date +%Y%m%d_%H%M%S)
+    echo "Backed up current ossec.conf"
+    ```
+
+2.  **Edit `ossec.conf`:**
 
     ```bash
     sudo nano /var/ossec/etc/ossec.conf
     ```
 
-2.  Add the following `<localfile>` block inside the `<ossec_config>` section. This tells the manager's *own* logcollector to monitor the `backup.log` file.
+3.  **Add `<localfile>` Block:**
+    Inside the `<ossec_config>` section, add the following block. This tells the manager's *own* log collector (which runs even without an agent installed) to monitor the `backup.log` file using the `syslog` format (suitable for Restic's log lines).
 
     ```xml
-    <localfile>
-      <location>/var/log/restic/backup.log</location>
-      <log_format>syslog</log_format>
-    </localfile>
+      <localfile>
+        <location>/var/log/restic/backup.log</location>
+        <log_format>syslog</log_format>
+      </localfile>
     ```
 
-    [cite\_start][cite: 1287, 1218]
+4.  **(Recommended for Validation)** **Enable Log Archiving:**
+    Ensure the `<global>` section includes `<logall_json>yes</logall_json>`. This archives *all* received logs (even if they don't trigger rules) to `/var/ossec/logs/archives/archives.json` (or dated subdirectories), which is essential for verifying ingestion during setup.
 
-3.  *(Optional - From Report)* The methodology also included a step to fix badly formatted `<label>` tags (e.g., from Zeek logs) that may have been in the configuration.
-
-    ```bash
-    sudo sed -i 's#<label>\([^ ]\+\)</label>#<label key="program_name">\1</label>#g' /var/ossec/etc/ossec.conf
+    ```xml
+      <global>
+        <logall_json>yes</logall_json>
+        ...
+      </global>
     ```
 
-    [cite\_start][cite: 1290]
+    *Note: Keeping `logall_json` enabled permanently can consume significant disk space.*
 
-### 5.2 Restart Wazuh Manager
+### **6.2 Restart Wazuh Manager**
 
-Apply the configuration changes by restarting the manager.
+Apply the configuration changes by restarting the Wazuh Manager service.
 
 ```bash
+echo "Restarting Wazuh Manager to apply changes..."
 sudo systemctl restart wazuh-manager
+
+# Verify manager status after restart
 sudo systemctl status --no-pager wazuh-manager
 ```
 
-[cite\_start][cite: 1294, 1295]
-
 -----
 
-## 6\. Part 5: Validation
+## **7. Part 5: Validation**
 
-### 6.1 Trigger a Manual Backup
+Verify that the integration works by triggering a backup and checking if the logs appear in Wazuh.
 
-Start the backup service manually to generate logs.
+### **7.1 Trigger a Manual Backup**
+
+Run the backup service manually to generate fresh log entries.
 
 ```bash
+echo "Starting a manual Restic backup to generate logs..."
 sudo systemctl start restic-backup.service
 ```
 
-[cite\_start][cite: 1298]
-
-### 6.2 Check Restic Log
-
-First, confirm the log file was written correctly.
+*Wait a few minutes for the backup (and prune) to complete. You can monitor its progress by tailing the Restic log:*
 
 ```bash
+echo "Monitoring Restic log file for completion..."
 sudo tail -f /var/log/restic/backup.log
 ```
 
-(Look for the "FINISH backup OK" message)
+*(Press `Ctrl+C` once you see the "FINISH backup job OK" message)*
 
-### 6.3 Check Wazuh Archives
+### **7.2 Check Wazuh Archives**
 
-Finally, verify that the Wazuh Manager ingested the log.
+Check the Wazuh archive log file (`archives.json` or dated files) on the Manager to confirm the log entries were ingested.
 
 ```bash
-# Search the JSON archives for the success message
-sudo grep "FINISH backup OK" /var/ossec/logs/archives/archives.json
+echo "Checking Wazuh archives for Restic log entries..."
+# Search the JSON archives for the backup success message
+# Adjust the path if Wazuh rotates archives into dated directories (e.g., /var/ossec/logs/archives/YYYY/Mon/)
+sleep 10 # Allow a few seconds for ingestion
+sudo grep "FINISH backup job OK" /var/ossec/logs/archives/archives.json
 ```
 
-[cite\_start][cite: 1299]
+  * **Expected Output:** You should see JSON objects containing the `full_log` field with your Restic log messages, including `[timestamp] START backup job`, `[...] SNAPSHOT created`, `[...] Pruning process finished`, and `[...] FINISH backup job OK`. Example:
 
-You should see a JSON object confirming the ingestion, similar to:
+    ```json
+    {
+      "timestamp": "2025-10-19T...",
+      "agent": {
+        "id": "000",        // ID 000 indicates logs collected by the manager itself
+        "name": "YourManagerHostname" 
+      },
+      "manager": {
+        "name": "YourManagerHostname"
+      },
+      "id": "...",
+      "full_log": "[2025-10-19T...] FINISH backup job OK", 
+      "decoder": {},
+      "location": "/var/log/restic/backup.log" // Confirms the source file
+    }
+    ```
 
-```json
-{
-  "timestamp": "2025-09-11T22:50:39.608+0200",
-  "agent": {
-    "id": "000",
-    "name": "flausino"
-  },
-  "full_log": "[2025-09-11T20:50:37Z] FINISH backup OK",
-  ...
-}
-```
+  * **If logs are missing:** Double-check the `<localfile>` path in `ossec.conf`, ensure the Wazuh manager has read permissions for `/var/log/restic/backup.log` (should be covered by root running the service), and confirm `logall_json` is enabled. Restart the manager if changes were made.
 
-[cite\_start][cite: 1301-1306]
+This successful ingestion confirms the integration is working. You can now proceed to create custom Wazuh rules (in `local_rules.xml`) to generate alerts based on specific messages like "START backup", "FINISH backup job OK", or potential error messages from Restic.
 
-This confirms the log was successfully collected by the Wazuh manager. You can now build custom rules based on the log content (e.g., alert on "START backup" and "FINISH backup OK").
+-----
+
+### Author
+
+**Bruno Rubens Flausino Teixeira**
+*Wazuh SOC Enterprise Lab – Threat Intelligence Stack*

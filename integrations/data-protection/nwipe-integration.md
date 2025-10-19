@@ -1,565 +1,310 @@
-# nwipe-Wazuh Integration: Complete Installation and Integration Methodology
+# **nwipe and Wazuh SIEM Integration**
 
-## Abstract
+## **1. Overview**
 
-This report provides a comprehensive, reproducible methodology for installing and integrating **nwipe** (a secure disk erasure tool forked from dwipe) with **Wazuh**, an open-source Security Information and Event Management (SIEM) system, on Ubuntu 24.04. The process ensures complete traceability of erasure operations through JSON logging while prioritizing safety by avoiding destructive actions during setup and testing.
+This guide provides a complete, step-by-step methodology for installing **nwipe** (a secure disk erasure tool) and integrating its execution logs with a **Wazuh 4.12** SIEM platform on **Ubuntu 24.04**.
 
-## Key Features
+[cite\_start]The primary objective is to create a complete audit trail for all disk erasure operations[cite: 201, 208]. [cite\_start]This is achieved by configuring Wazuh to ingest custom JSON logs generated during `nwipe` execution[cite: 203, 212, 279, 291].
 
-- **Safety-first approach**: No destructive actions during setup or testing
-- **Modular scripts**: Complete, ready-to-use scripts for each phase
-- **JSON logging**: Structured event collection with proper Wazuh integration
-- **Community-ready**: Fully reproducible with detailed troubleshooting
+This methodology follows a **safety-first principle**. [cite\_start]As etapas de instalação, configuração e teste são separadas para prevenir qualquer destruição acidental de dados durante a configuração[cite: 203, 226, 854].
 
-## Environment and Prerequisites
+## **2. System Environment**
 
-### System Requirements
+  * [cite\_start]**Operating System:** Ubuntu 24.04 (x86\_64) [cite: 216, 848]
+  * [cite\_start]**SIEM:** Wazuh 4.12 (Manager, Indexer, and Dashboard) [cite: 217, 849]
+  * [cite\_start]**Privileges:** All commands require `sudo`[cite: 219, 850].
 
-- **Operating System**: Ubuntu 24.04 (x86_64 architecture)
-- **Wazuh Components**: Version 4.12, including:
-  - Manager (log analysis)
-  - Indexer (OpenSearch-based storage)  
-  - Dashboard (visualization)
-- **Privileges**: All commands executed with `sudo`
+-----
 
-### External Dependencies
+## **3. Part 1: Safe Installation of nwipe**
 
-| Package | Role in Methodology |
-|---------|-------------------|
-| `git` | Clones the nwipe repository from GitHub |
-| `build-essential` | Provides build tools (gcc, make) for nwipe compilation |
-| `autoconf` | Generates configuration scripts during build |
-| `automake` | Automates makefile creation |
-| `libtool` | Manages library dependencies |
-| `pkg-config` | Handles compile/link flags for libraries |
-| `libparted-dev` | Supports disk partitioning functionality in nwipe |
-| `libncurses-dev` | Enables text-based UI components in nwipe |
+Esta fase instala a ferramenta `nwipe`. [cite\_start]Nenhum disco será acedido ou apagado[cite: 229, 240, 857].
 
-## Complete Methodology
+### **3.1. Tentativa 1: Instalação via APT (Recomendado)**
 
-The process is divided into four independent phases using dedicated Bash scripts to prevent inadvertent destructive actions and enable modular replication.
-
-### Phase 1: Safe Installation of nwipe
-
-#### Script: `install_nwipe_safe.sh`
-
-This script installs nwipe without executing it or accessing block devices. It attempts installation via APT, falling back to source compilation if necessary.
+Primeiro, tente instalar o `nwipe` usando o gestor de pacotes do Ubuntu.
 
 ```bash
-#!/usr/bin/env bash
-# install_nwipe_safe.sh — Installs nwipe only on Ubuntu 22.04/24.04
-# - Does NOT execute nwipe
-# - Does NOT access /dev/sdX / nvme*
-# - Does NOT perform destructive tests
+# 1. Atualizar os índices do APT
+sudo apt-get update -y
 
-set -Eeuo pipefail
+# 2. Tentar instalar o pacote nwipe
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nwipe
+```
 
-log() { printf "\033[0;32m[INFO]\033[0m %s\n" "$*"; }
-warn() { printf "\033[1;33m[WARN]\033[0m %s\n" "$*"; }
-err() { printf "\033[0;31m[ERROR]\033[0m %s\n" "$*" >&2; }
-die() { err "$*"; exit 1; }
+### **3.2. Verificar a Instalação**
 
-cleanup() {
-    [[ -n "${TMPDIR_CREATED:-}" && -d "${TMPDIR_CREATED}" ]] && rm -rf "${TMPDIR_CREATED}" || true
-}
-trap cleanup EXIT
+Execute o seguinte comando para verificar se a instalação foi bem-sucedida:
 
-require_root() { [[ $EUID -eq 0 ]] || die "Run as root (sudo)."; }
+```bash
+nwipe --version
+```
 
-check_os() {
-    if [[ -r /etc/os-release ]]; then
-        . /etc/os-release
-        case "${ID}-${VERSION_ID}" in
-            ubuntu-24.04|ubuntu-22.04) ;;
-            *) warn "Detected distribution: ${PRETTY_NAME:-unknown}. Proceeding anyway...";;
-        esac
-    fi
-}
+  * Se este comando mostrar a versão do `nwipe`, a **Parte 1 está concluída**. Avance para a **Parte 2**.
+  * Se o comando falhar (ou se a instalação via APT falhou), continue para a **Parte 3.3**.
 
-apt_update() {
-    log "Updating APT indexes..."
-    apt-get update -y
-}
+### **3.3. Tentativa 2: Compilação a partir do Código Fonte**
 
-install_via_apt() {
-    log "Attempting to install 'nwipe' via APT..."
-    if DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nwipe; then
-        log "nwipe installed via APT."
-        return 0
-    else
-        warn "nwipe package unavailable or failed via APT. Falling back to compilation."
-        return 1
-    fi
-}
+Se o `nwipe` não estiver disponível nos repositórios, compile-o manualmente.
 
-install_build_deps() {
-    log "Installing build dependencies..."
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+1.  **Instalar Dependências de Compilação:**
+    [cite\_start]Instale as ferramentas necessárias para compilar o `nwipe`[cite: 223, 263, 851, 915, 916].
+
+    ```bash
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         build-essential git autoconf automake libtool pkg-config \
         libparted-dev libncurses-dev
-}
+    ```
 
-build_from_source() {
-    local url dir
-    url="${NWIPE_REPO:-https://github.com/martijnvanbrummelen/nwipe.git}"
-    dir="$(mktemp -d)"
-    TMPDIR_CREATED="${dir}"
-    
-    log "Cloning repository: ${url}"
-    git clone --depth=1 "${url}" "${dir}/nwipe"
-    cd "${dir}/nwipe"
-    
-    [[ -x ./autogen.sh ]] && ./autogen.sh
+2.  **Clonar o Repositório:**
+    [cite\_start]Clone o código fonte oficial do `nwipe`[cite: 266, 925].
+
+    ```bash
+    git clone --depth=1 https://github.com/martijnvanbrummelen/nwipe.git /tmp/nwipe_source
+    ```
+
+3.  **Compilar e Instalar:**
+    [cite\_start]Entre no diretório, configure, compile e instale o binário [cite: 266, 267, 926-930].
+
+    ```bash
+    cd /tmp/nwipe_source
+
+    # Gerar scripts de configuração, se necessário
+    if [ -x ./autogen.sh ]; then
+      ./autogen.sh
+    fi
+
+    # Configurar para instalar em /usr
     ./configure --prefix=/usr
+
+    # Compilar usando todos os cores do processador
     make -j"$(nproc)"
-    make install
-    
-    log "nwipe compiled and installed in /usr/bin/nwipe"
-}
 
-verify_install() {
-    command -v nwipe >/dev/null || die "nwipe not found in PATH after installation."
-    log "Installed version (safe call):"
-    nwipe --version || true
-}
+    # Instalar o binário no sistema
+    sudo make install
+    ```
 
-main() {
-    require_root
-    check_os
-    apt_update
-    
-    if ! install_via_apt; then
-        install_build_deps
-        build_from_source
-    fi
-    
-    verify_install
-    log "INSTALLATION COMPLETED SUCCESSFULLY."
-    warn "This script DID NOT execute 'nwipe' and DID NOT touch any block device."
-}
+4.  **Verificar a Instalação (Novamente):**
+    [cite\_start]Confirme que o `nwipe` está agora instalado[cite: 268, 269, 933, 935].
 
-main "$@"
-```
+    ```bash
+    nwipe --version
+    ```
 
-**Execution:**
-```bash
-sudo ./install_nwipe_safe.sh
-```
+5.  **Limpeza:**
+    Remova o diretório do código fonte.
 
-**Outcome:** nwipe installed in `/usr/bin/nwipe` without risks.
+    ```bash
+    cd ~
+    rm -rf /tmp/nwipe_source
+    ```
 
-### Phase 2: Wazuh Integration Configuration
+-----
 
-#### Script: `setup_wazuh_integration_safe_v4.sh`
+## **4. Part 2: Configuração da Integração com Wazuh**
 
-This script configures JSON log collection and integrates nwipe with Wazuh. It detects the Wazuh role, sets up log format, enables logrotate, and adds custom rules.
+[cite\_start]Esta fase configura o Wazuh (agente ou gestor) para monitorizar um ficheiro de log JSON dedicado para o `nwipe`[cite: 279, 291].
 
-```bash
-#!/usr/bin/env bash
-# setup_wazuh_integration_safe_v4.sh — Secure nwipe-Wazuh integration
-# - Does NOT execute nwipe
-# - Does NOT access /dev/*
-# - Configures JSON collection in /var/log/nwipe/wazuh_events.log and local rules
+### **4.1. Definir Permissões e Variáveis**
 
-set -Eeuo pipefail
+1.  Primeiro, identifique o grupo de utilizador correto da sua instalação Wazuh (normalmente é `wazuh`):
 
-log() { printf "\033[0;32m[INFO]\033[0m %s\n" "$*"; }
-warn() { printf "\033[1;33m[WARN]\033[0m %s\n" "$*"; }
-err() { printf "\033[0;31m[ERROR]\033[0m %s\n" "$*" >&2; }
-die() { err "$*"; exit 1; }
+    ```bash
+    # Este comando guarda o nome do grupo na variável $OSSEC_GRP
+    OSSEC_GRP=$(stat -c %G /var/ossec)
 
-require_root() { [[ $EUID -eq 0 ]] || die "Run as root (sudo)."; }
+    # Verifique se funcionou (deve imprimir 'wazuh' ou similar)
+    echo "Grupo Wazuh detectado: $OSSEC_GRP"
+    ```
 
-ROLE=""
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --role) ROLE="$2"; shift 2;;
-        --role=*) ROLE="${1#*=}"; shift;;
-        *) warn "Ignored parameter: $1"; shift;;
-    esac
-done
+2.  [cite\_start]Crie o diretório de log para o `nwipe` e atribua a propriedade ao grupo Wazuh[cite: 1033]:
 
-OSSEC_DIR="/var/ossec"
-CONF_PATH="${OSSEC_DIR}/etc/ossec.conf"
-LOCAL_RULES="${OSSEC_DIR}/etc/rules/local_rules.xml"
-TARGET_LOG_DIR="/var/log/nwipe"
-TARGET_LOG_FILE="${TARGET_LOG_DIR}/wazuh_events.log"
+    ```bash
+    sudo install -d -m 0750 -o root -g $OSSEC_GRP /var/log/nwipe
+    ```
 
-# Discover correct group using /var/ossec owner (e.g., 'wazuh')
-detect_ossec_group() {
-    [[ -d "${OSSEC_DIR}" ]] || die "Directory ${OSSEC_DIR} not found. Install Wazuh first."
-    OSSEC_GRP="$(stat -c %G "${OSSEC_DIR}" 2>/dev/null || echo wazuh)"
-    getent group "${OSSEC_GRP}" >/dev/null || OSSEC_GRP="root"
-    log "Using group '${OSSEC_GRP}' for permissions."
-}
+3.  [cite\_start]Crie o ficheiro de log JSON vazio e atribua as permissões corretas[cite: 1035]:
 
-service_exists() {
-    local svc="$1"
-    systemctl status "$svc" >/dev/null 2>&1 && return 0
-    systemctl list-units --all | grep -qE "^${svc}\b" && return 0
-    systemctl list-unit-files | grep -qE "^${svc}\b" && return 0
-    [[ -e "/etc/systemd/system/${svc}" || -e "/lib/systemd/system/${svc}" || -e "/usr/lib/systemd/system/${svc}" ]] && return 0
-    return 1
-}
+    ```bash
+    sudo install -m 0640 -o root -g $OSSEC_GRP /dev/null /var/log/nwipe/wazuh_events.log
+    ```
 
-# Detect Wazuh role
-detect_wazuh_role() {
-    if [[ -n "${ROLE}" ]]; then
-        case "${ROLE}" in
-            manager) SERVICE="wazuh-manager";;
-            agent) SERVICE="wazuh-agent";;
-            *) die "Invalid value for --role (use 'manager' or 'agent').";;
-        esac
-        log "Role forced via parameter: ${ROLE} (service ${SERVICE})"
-        return
-    fi
-    
-    if service_exists "wazuh-agent.service"; then
-        SERVICE="wazuh-agent"; ROLE="agent"; log "Detected Wazuh agent."; return
-    fi
-    if service_exists "wazuh-manager.service"; then
-        SERVICE="wazuh-manager"; ROLE="manager"; log "Detected Wazuh manager."; return
-    fi
-    
-    SERVICE=""; ROLE="unknown"
-    warn "Wazuh service not detected. Will apply configurations; restart manually later."
-}
+### **4.2. Configurar Logrotate**
 
-# Create log path and logrotate
-prepare_log_path() {
-    log "Preparing ${TARGET_LOG_FILE}"
-    install -d -m 0750 -o root -g "${OSSEC_GRP}" "${TARGET_LOG_DIR}"
-    
-    if [[ ! -e "${TARGET_LOG_FILE}" ]]; then
-        install -m 0640 -o root -g "${OSSEC_GRP}" /dev/null "${TARGET_LOG_FILE}"
-    else
-        chown root:"${OSSEC_GRP}" "${TARGET_LOG_FILE}" || true
-        chmod 0640 "${TARGET_LOG_FILE}"
-    fi
-    
-    # logrotate
-    local lr="/etc/logrotate.d/nwipe"
-    if [[ ! -f "${lr}" ]]; then
-        cat > "${lr}" <<ROT
-/var/log/nwipe/*.log {
-    daily
-    rotate 14
-    missingok
-    compress
-    delaycompress
-    notifempty
-    create 0640 root ${OSSEC_GRP}
-}
-ROT
-        log "Logrotate configured in ${lr}."
-    else
-        sed -i "s/^\s*create\s\+0640\s\+root\s\+.*$/ create 0640 root ${OSSEC_GRP}/" "${lr}" || true
-    fi
-}
+Crie um ficheiro de rotação de logs para evitar que este ficheiro cresça indefinidamente.
 
-backup_conf() {
-    [[ -f "${CONF_PATH}" ]] || die "ossec.conf not found."
-    local ts; ts="$(date +'%Y%m%d_%H%M%S')"
-    cp -a "${CONF_PATH}" "${CONF_PATH}.bak_${ts}"
-    log "Backup created: ${CONF_PATH}.bak_${ts}"
-}
+1.  Abra um novo ficheiro de configuração do logrotate:
 
-# Add <localfile> json
-ensure_localfile_json() {
-    if grep -Fq "${TARGET_LOG_FILE}" "${CONF_PATH}"; then
-        log "<localfile> entry already exists."
-        return
-    fi
-    
-    log "Inserting <localfile> (json) block in ossec.conf..."
-    local SNIP tmpfile
-    read -r -d '' SNIP <<EOF
-  <localfile>
-    <location>${TARGET_LOG_FILE}</location>
-    <log_format>json</log_format>
-  </localfile>
-EOF
-    
-    tmpfile="$(mktemp)"
-    awk -v snip="$SNIP" '
-        /<\/ossec_config>/ && !x { print snip; x=1 }
-        { print }
-    ' "${CONF_PATH}" > "${tmpfile}"
-    
-    install -m 0640 -o root -g "${OSSEC_GRP}" "${tmpfile}" "${CONF_PATH}"
-    rm -f "${tmpfile}"
-    log "<localfile> block added."
-}
+    ```bash
+    sudo nano /etc/logrotate.d/nwipe
+    ```
 
-# Add rules to local_rules.xml
-ensure_local_rules() {
-    install -d -m 0750 -o root -g "${OSSEC_GRP}" "$(dirname "${LOCAL_RULES}")"
-    
-    if [[ ! -f "${LOCAL_RULES}" ]]; then
-        cat > "${LOCAL_RULES}" <<'XML'
-<group name="local,">
-</group>
-XML
-        chown root:"${OSSEC_GRP}" "${LOCAL_RULES}" || true
-        chmod 0640 "${LOCAL_RULES}"
-    fi
-    
-    if grep -Fq '<group name="nwipe,' "${LOCAL_RULES}"; then
-        log "Rule group 'nwipe' already exists."
-        return
-    fi
-    
-    log "Adding 'nwipe' rule group to local_rules.xml..."
-    cat >> "${LOCAL_RULES}" <<'XML'
-<group name="nwipe,">
-  <rule id="100500" level="3">
-    <decoded_as>json</decoded_as>
-    <field name="component">^nwipe-wrapper$</field>
-    <field name="msg">^INICIO$</field>
-    <description>NWipe: start execution</description>
-    <options>no_full_log</options>
-  </rule>
+2.  Cole o seguinte conteúdo. [cite\_start]Certifique-se de **substituir `$OSSEC_GRP`** pelo nome do seu grupo (ex: `wazuh`) [cite: 1042-1052].
 
-  <rule id="100501" level="3">
-    <decoded_as>json</decoded_as>
-    <field name="component">^nwipe-wrapper$</field>
-    <field name="msg">^FIM$</field>
-    <field name="level">^info$</field>
-    <description>NWipe: successful completion</description>
-    <options>no_full_log</options>
-  </rule>
+    ```ini
+    /var/log/nwipe/*.log {
+        daily
+        rotate 14
+        missingok
+        compress
+        delaycompress
+        notifempty
+        create 0640 root wazuh
+    }
+    ```
 
-  <rule id="100502" level="10">
-    <decoded_as>json</decoded_as>
-    <field name="component">^nwipe-wrapper$</field>
-    <field name="msg">^FIM$</field>
-    <field name="level">^error$</field>
-    <description>NWipe: completion with error</description>
-  </rule>
-</group>
-XML
-    chown root:"${OSSEC_GRP}" "${LOCAL_RULES}" || true
-    chmod 0640 "${LOCAL_RULES}"
-    log "'nwipe' rules added."
-}
+    *(Substitua `wazuh` se o seu `$OSSEC_GRP` for diferente.)*
 
-apply_wazuh() {
-    if [[ -z "${SERVICE}" ]]; then
-        warn "Wazuh service not detected automatically. Restart manually when desired."
-        return 0
-    fi
-    
-    log "Restarting ${SERVICE}..."
-    if systemctl is-active --quiet "${SERVICE}"; then
-        systemctl restart "${SERVICE}"
-    else
-        systemctl start "${SERVICE}" || true
-    fi
-    systemctl --no-pager --full status "${SERVICE}" -l --no-legend || true
-}
+### **4.3. Configurar o Wazuh (ossec.conf)**
 
-main() {
-    require_root
-    detect_ossec_group
-    detect_wazuh_role
-    prepare_log_path
-    backup_conf
-    ensure_localfile_json
-    ensure_local_rules
-    apply_wazuh
-    
-    log "Integration completed safely."
-    warn "No destructive actions executed. nwipe was NOT started."
-}
+1.  [cite\_start]Faça um backup do seu ficheiro `ossec.conf`[cite: 1064]:
 
-main "$@"
-```
+    ```bash
+    sudo cp /var/ossec/etc/ossec.conf /var/ossec/etc/ossec.conf.bak_$(date +'%Y%m%d_%H%M%S')
+    ```
 
-**Execution:**
-```bash
-sudo ./setup_wazuh_integration_safe_v4.sh --role=manager
-```
+2.  Edite o ficheiro `ossec.conf` para adicionar o novo ficheiro de log:
 
-**Outcome:** Log file and rules configured; Wazuh restarted if detected.
+    ```bash
+    sudo nano /var/ossec/etc/ossec.conf
+    ```
 
-### Phase 3: Test Event Generation
+3.  [cite\_start]Adicione o seguinte bloco `<localfile>` dentro da secção `<ossec_config>`, de preferência junto de outros blocos `<localfile>` [cite: 1075-1079]. [cite\_start]Este bloco instrui o Wazuh a ler o ficheiro como JSON[cite: 213, 844, 954, 1232, 1247].
 
-#### Script: `nwipe_integration_test_safe.sh`
+    ```xml
+      <localfile>
+        <location>/var/log/nwipe/wazuh_events.log</location>
+        <log_format>json</log_format>
+      </localfile>
+    ```
 
-This script generates simulated nwipe events in JSON format to test integration without performing any erasure operations.
+4.  **(Obrigatório para Depuração)** Assegure-se de que o arquivamento de todos os logs (mesmo os que não disparam regras) está ativo. [cite\_start]Dentro do bloco `<global>`, verifique se `<logall_json>yes</logall_json>` está presente[cite: 214, 351, 846, 1200, 1235, 1248].
+
+    ```xml
+      <global>
+        <logall_json>yes</logall_json>
+        ...
+      </global>
+    ```
+
+### **4.4. Adicionar Regras Personalizadas (local\_rules.xml)**
+
+1.  Edite o seu ficheiro de regras locais:
+
+    ```bash
+    sudo nano /var/ossec/etc/rules/local_rules.xml
+    ```
+
+2.  Adicione o seguinte grupo de regras. [cite\_start]Se o ficheiro estiver vazio, certifique-se de que o cola entre as tags `<group name="local,">` e `</group>` [cite: 1103-1127].
+
+    ```xml
+    <group name="nwipe,">
+      <rule id="100500" level="3">
+        <decoded_as>json</decoded_as>
+        <field name="component">^nwipe-wrapper$</field>
+        <field name="msg">^INICIO$</field>
+        <description>NWipe: start execution</description>
+        <options>no_full_log</options>
+      </rule>
+
+      <rule id="100501" level="3">
+        <decoded_as>json</decoded_as>
+        <field name="component">^nwipe-wrapper$</field>
+        <field name="msg">^FIM$</field>
+        <field name="level">^info$</field>
+        <description>NWipe: successful completion</description>
+        <options>no_full_log</options>
+      </rule>
+
+      <rule id="100502" level="10">
+        <decoded_as>json</decoded_as>
+        <field name="component">^nwipe-wrapper$</field>
+        <field name="msg">^FIM$</field>
+        <field name="level">^error$</field>
+        <description>NWipe: completion with error</description>
+      </rule>
+    </group>
+    ```
+
+    [cite\_start]*Nota: Estas regras usam `<decoded_as>json</decoded_as>`, que é a sintaxe correta para regras de JSON[cite: 338, 374].*
+
+### **4.5. Aplicar Alterações**
+
+Reinicie o serviço Wazuh para carregar as novas configurações e regras.
 
 ```bash
-#!/usr/bin/env bash
-# nwipe_integration_test_safe.sh — Generates test JSON events for Wazuh
-# - Does NOT execute nwipe
-# - Does NOT access /dev/*
+# Se estiver no Wazuh Manager
+sudo systemctl restart wazuh-manager
 
-set -Eeuo pipefail
-
-LOG="/var/log/nwipe/wazuh_events.log"
-
-info() { printf "\033[0;32m[INFO]\033[0m %s\n" "$*"; }
-err() { printf "\033[0;31m[ERROR]\033[0m %s\n" "$*" >&2; exit 1; }
-
-[[ $EUID -eq 0 ]] || err "Run as root (sudo)."
-[[ -f "$LOG" ]] || err "File $LOG does not exist. Run integration first."
-
-ts() { date -u +'%Y-%m-%dT%H:%M:%SZ'; }
-
-write_event() {
-    # $1=level $2=msg $3=extra_json
-    printf '{"ts":"%s","component":"nwipe-wrapper","level":"%s","msg":"%s","extra":%s}\n' \
-        "$(ts)" "$1" "$2" "$3" >> "$LOG"
-}
-
-info "Writing test events to $LOG ..."
-
-write_event "info" "INICIO" '{"device":"/dev/TEST","args":"--method dodshort --verify last","runlog":"/var/log/nwipe/nwipe_TEST.log"}'
-sleep 1
-
-write_event "info" "FIM" '{"device":"/dev/TEST","rc":0}'
-sleep 1
-
-write_event "error" "FIM" '{"device":"/dev/TEST_FAIL","rc":1,"error":"simulado"}'
-
-info "Completed."
+# Se estiver num Wazuh Agent
+sudo systemctl restart wazuh-agent
 ```
 
-**Execution:**
-```bash
-sudo ./nwipe_integration_test_safe.sh
-```
+-----
 
-**Sample Generated Events:**
-```json
-{"ts":"2025-10-18T06:16:00Z","component":"nwipe-wrapper","level":"info","msg":"INICIO","extra":{"device":"/dev/TEST","args":"--method dodshort --verify last","runlog":"/var/log/nwipe/nwipe_TEST.log"}}
-{"ts":"2025-10-18T06:16:01Z","component":"nwipe-wrapper","level":"info","msg":"FIM","extra":{"device":"/dev/TEST","rc":0}}
-{"ts":"2025-10-18T06:16:02Z","component":"nwipe-wrapper","level":"error","msg":"FIM","extra":{"device":"/dev/TEST_FAIL","rc":1,"error":"simulado"}}
-```
+## **5. Part 3: Geração de Eventos de Teste**
 
-### Phase 4: Rule Adjustment and Validation
+Esta fase valida a pipeline de logs **sem executar o nwipe**. [cite\_start]Vamos escrever manualmente eventos JSON simulados no ficheiro de log monitorizado[cite: 305, 1162].
 
-#### Critical Configuration Corrections
-
-Initial implementation encountered decoder issues that required the following corrections:
-
-| Rule ID | Original Issue | Correction | Alert Level |
-|---------|---------------|------------|-------------|
-| 100500 | `<if_decoder>json</if_decoder>`, `data.component` | `<decoded_as>json</decoded_as>`, `component` | 3: Nwipe start execution |
-| 100501 | Same, plus `data.level` | Same, `level=info` | 3: Nwipe successful completion |
-| 100502 | Same, `data.level=error` | Same, `level=error` | 10: Nwipe completion with error |
-
-#### Validation with wazuh-logtest
-
-Test the rules using the Wazuh log testing tool:
+Execute os seguintes comandos no terminal. [cite\_start]Eles irão simular um início, um sucesso e um erro [cite: 1188-1197].
 
 ```bash
-sudo /var/ossec/bin/wazuh-logtest
+# 1. Simular evento de INÍCIO (Nível 3)
+echo '{"ts":"$(date -u +'%Y-%m-%dT%H:%M:%SZ')","component":"nwipe-wrapper","level":"info","msg":"INICIO","extra":{"device":"/dev/TEST","args":"--method dodshort --verify last","runlog":"/var/log/nwipe/nwipe_TEST.log"}}' | sudo tee -a /var/log/nwipe/wazuh_events.log
+
+# 2. Simular evento de FIM com SUCESSO (Nível 3)
+echo '{"ts":"$(date -u +'%Y-%m-%dT%H:%M:%SZ')","component":"nwipe-wrapper","level":"info","msg":"FIM","extra":{"device":"/dev/TEST","rc":0}}' | sudo tee -a /var/log/nwipe/wazuh_events.log
+
+# 3. Simular evento de FIM com ERRO (Nível 10)
+echo '{"ts":"$(date -u +'%Y-%m-%dT%H:%M:%SZ')","component":"nwipe-wrapper","level":"error","msg":"FIM","extra":{"device":"/dev/TEST_FAIL","rc":1,"error":"simulado"}}' | sudo tee -a /var/log/nwipe/wazuh_events.log
 ```
 
-Input sample JSON:
-```json
-{"ts":"2025-09-15T10:25:00Z","component":"nwipe-wrapper","level":"info","msg":"FIM","extra":{"device":"/dev/TEST","rc":0}}
-```
+-----
 
-This should resolve decoder errors (2106/7311) and confirm proper rule triggering.
+## **6. Part 4: Validação e Verificação**
 
-## Required Wazuh Configuration
+Vamos verificar se os eventos de teste geraram os alertas corretos no Wazuh Manager.
 
-### Essential ossec.conf Settings
+### **6.1. Verificação (archives.json)**
 
-1. **JSON Log Format**: Ensure `<log_format>json</log_format>` is set in `<localfile>` blocks
-2. **Complete Event Archiving**: Enable `<logall_json>yes</logall_json>` in the `<global>` section for comprehensive event archiving in `/var/ossec/logs/archives/archives.json`
-
-### Example Configuration Snippet
-
-```xml
-<ossec_config>
-  <global>
-    <logall_json>yes</logall_json>
-  </global>
-  
-  <localfile>
-    <location>/var/log/nwipe/wazuh_events.log</location>
-    <log_format>json</log_format>
-  </localfile>
-</ossec_config>
-```
-
-## Results and Verification
-
-### Installation Success
-- nwipe successfully installed in `/usr/bin/nwipe` via APT or source compilation
-- No block device access during installation
-- Version verification with `nwipe --version`
-
-### Integration Verification
-- JSON log file configured with proper permissions
-- Wazuh monitoring `/var/log/nwipe/wazuh_events.log`
-- Custom rules loaded in `local_rules.xml`
-
-### Event Processing Confirmation
-Test events successfully processed with alerts confirming:
-- **Rule 100500** (level 3) for "INICIO"
-- **Rule 100501** (level 3) for "FIM" with `level=info`
-- **Rule 100502** (level 10) for "FIM" with `level=error`
-
-Events are visible in:
-- `/var/ossec/logs/archives/archives.json`
-- `/var/ossec/logs/alerts/alerts.json`
-- Wazuh dashboard
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Rule Syntax Errors**: Use `<decoded_as>json</decoded_as>` instead of `<if_decoder>json</if_decoder>`
-2. **Missing Events**: Ensure `<logall_json>yes</logall_json>` is enabled in `<global>` section
-3. **Permission Issues**: Verify log file permissions match Wazuh group (usually `wazuh`)
-4. **Service Restart**: Always restart Wazuh manager after configuration changes
-
-### Debug Commands
+[cite\_start]Graças à configuração `<logall_json>yes</logall_json>`, podemos ver os logs brutos a chegar ao manager[cite: 351, 1201, 1237].
 
 ```bash
-# Test log parsing
-sudo /var/ossec/bin/wazuh-logtest
-
-# Check rule loading
-sudo /var/ossec/bin/wazuh-analysisd -t
-
-# Monitor log ingestion
-sudo tail -f /var/ossec/logs/archives/archives.json
-
-# Check alerts
-sudo tail -f /var/ossec/logs/alerts/alerts.json
+# Monitorize os logs de arquivo em tempo real
+sudo tail -f /var/ossec/logs/archives/archives.json | grep "nwipe-wrapper"
 ```
 
-## Security Considerations
+  * [cite\_start]**Resultado Esperado:** Você deverá ver os três eventos JSON que simulou a aparecerem neste ficheiro [cite: 359-366]. Se aparecerem, o Wazuh está a ler o ficheiro de log corretamente.
 
-- **No Data Loss Risk**: All scripts prevent accidental data erasure
-- **Comprehensive Auditing**: Complete event traceability through Wazuh
-- **Access Control**: Proper file permissions and group assignments
-- **Safe Testing**: Simulated events for validation without real disk operations
+### **6.2. Verificação (alerts.json)**
 
-## Best Practices
+Agora, verifique se as suas regras personalizadas (100500, 100501, 100502) dispararam.
 
-1. **Phase Segregation**: Execute scripts in order, one phase at a time
-2. **Backup Configurations**: Always backup `ossec.conf` before modifications
-3. **Test Rules**: Use `wazuh-logtest` to validate rule syntax and matching
-4. **Monitor Storage**: Enable log rotation to manage disk usage with `logall_json`
-5. **Verify Integration**: Run test events to confirm proper log flow
+```bash
+# Monitorize os logs de alerta em tempo real
+sudo tail -f /var/ossec/logs/alerts/alerts.json | grep "NWipe:"
+```
 
-## Conclusion
+  * [cite\_start]**Resultado Esperado:** Você deverá ver três alertas JSON, um para cada regra, confirmando que os níveis e descrições corretos foram acionados[cite: 368, 369, 370].
 
-This methodology provides a complete, safe, and auditable integration of nwipe with Wazuh. The modular script approach ensures community replication while maintaining operational security. Key benefits include comprehensive logging, real-time monitoring, and complete audit trails for secure data erasure operations.
+### **6.3. Verificação (wazuh-logtest)**
 
-## References
+[cite\_start]Para uma depuração detalhada, use a ferramenta `wazuh-logtest`[cite: 338, 1214].
 
-- [Wazuh Documentation - localfile](https://documentation.wazuh.com/current/user-manual/reference/ossec-conf/localfile.html)
-- [Wazuh Documentation - global](https://documentation.wazuh.com/current/user-manual/reference/ossec-conf/global.html)
-- [Wazuh Documentation - Event logging](https://documentation.wazuh.com/current/user-manual/manager/event-logging.html)
-- [nwipe GitHub Repository](https://github.com/martijnvanbrummelen/nwipe)
+1.  Execute a ferramenta:
 
----
+    ```bash
+    sudo /var/ossec/bin/wazuh-logtest
+    ```
 
-**Note**: This integration focuses on monitoring and auditing secure data erasure operations. Always follow your organization's data protection policies and ensure proper authorization before performing any disk erasure operations.
+2.  Cole uma das suas linhas de log JSON e prima Enter:
+    `{"ts":"2025-10-18T06:16:02Z","component":"nwipe-wrapper","level":"error","msg":"FIM","extra":{"device":"/dev/TEST_FAIL","rc":1,"error":"simulado"}}`
+
+3.  **Resultado Esperado:** A ferramenta deve mostrar-lhe que o `decoder: 'json'` foi usado e que a `rule id: '100502'` (nível 10) foi disparada.
+
+-----
+
+### Author
+
+**Bruno Rubens Flausino Teixeira**
+*Wazuh SOC Enterprise Lab – Threat Intelligence Stack*

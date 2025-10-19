@@ -1,7 +1,3 @@
-Aqui está o documento de metodologia para a integração do ClamAV, refeito para seguir o formato solicitado e com a assinatura de autor correta no final.
-
------
-
 # **ClamAV Integration with Wazuh Monitoring**
 
 ## **1. Overview**

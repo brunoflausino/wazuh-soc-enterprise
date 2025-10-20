@@ -1,370 +1,454 @@
-# Technical Report: Enterprise-Grade Zeek-Wazuh Integration for Network Security Monitoring
+### Complete Installation Guide for Zeek v7.2.2 on Ubuntu 24.04 LTS
 
-**Date:** September 11, 2025  
-**Author:** Network Security Implementation Team  
-**Environment:** Ubuntu 22.04 LTS Bare Metal  
-**Classification:** Production-Ready Implementation
+## Objective
 
-## Abstract
+Installation and configuration of Zeek (Network Security Monitoring) on bare-metal Ubuntu 24.04 LTS for general use.
 
-This technical report documents the successful implementation and validation of an enterprise-grade integration between Zeek Network Security Monitor and Wazuh SIEM platform on Ubuntu 22.04 LTS bare metal infrastructure. The integration achieves real-time network traffic analysis with automated threat detection capabilities, processing JSON-formatted network logs through custom rule engines. The implementation demonstrates successful event correlation with MITRE ATT&CK framework mapping and validates detection efficacy through controlled testing scenarios.
+---
 
-## 1. Introduction
+## Prerequisites
 
-### 1.1 Objective
+### Operating System
 
-To establish a production-ready integration between Zeek network monitoring platform and Wazuh Security Information and Event Management (SIEM) system, enabling real-time network anomaly detection and automated threat response capabilities.
+- Ubuntu 24.04 LTS (Noble Numbat)  
+- Root/sudo access  
+- Active network interface (e.g., eno1, eth0)
 
-### 1.2 Scope
+### Minimum Resources
 
-- Zeek network sensor configuration for JSON log output
-- Wazuh single-node deployment (Manager, Indexer, Dashboard)
-- Custom rule development for network security use cases
-- Validation testing and performance assessment
+- **RAM**: 4GB (8GB+ recommended)  
+- **Disk**: 10GB free for logs  
+- **CPU**: Minimum 2 cores  
+- **Network**: Interface with traffic to monitor
 
-### 1.3 Environment Specifications
+---
 
-- **Operating System:** Ubuntu 22.04 LTS
-- **Architecture:** x86_64 bare metal deployment
-- **Network Interface:** eno1 (standalone mode)
-- **Wazuh Version:** 4.12.0
-- **Zeek Configuration:** Standalone deployment with JSON logging
+## Tested Installation Methodology
 
-## 2. Methodology
-
-### 2.1 Infrastructure Assessment
-
-Initial assessment revealed an existing Wazuh all-in-one deployment with the following components:
-
-- Wazuh Manager (192.168.1.130:55000)
-- Wazuh Indexer (localhost:9200)
-- Wazuh Dashboard (192.168.1.130:443)
-
-The Zeek installation was pre-configured in standalone mode monitoring interface `eno1` with JSON output capabilities enabled.
-
-### 2.2 Integration Architecture
-
-The implementation follows a direct log ingestion model where the Wazuh Manager monitors Zeek log files through localfile configuration blocks, eliminating the need for separate agent deployment on the same host.
-
-```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│    Zeek     │───▶│   Wazuh     │───▶│   Wazuh     │
-│   Sensor    │    │   Manager   │    │  Indexer    │
-│             │    │             │    │             │
-└─────────────┘    └─────────────┘    └─────────────┘
-       │                  │                  │
-       ▼                  ▼                  ▼
-JSON Log Files     Rule Processing    Event Storage
-/opt/zeek/logs/    Custom Decoders   OpenSearch Index
-```
-
-## 3. Implementation Details
-
-### 3.1 Zeek Configuration Validation
-
-The Zeek installation was verified to be generating JSON-formatted logs in the following locations:
-
-- `/opt/zeek/logs/current/conn.log` - Network connection metadata
-- `/opt/zeek/logs/current/dns.log` - DNS query/response logging
-- `/opt/zeek/logs/current/ssl.log` - SSL/TLS connection analysis
-- `/opt/zeek/logs/current/http.log` - HTTP transaction logging
-- `/opt/zeek/logs/current/weird.log` - Protocol anomaly detection
-
-### 3.2 Wazuh Manager Configuration
-
-#### 3.2.1 Log Collection Configuration
-
-The integration was implemented through localfile blocks in `/var/ossec/etc/ossec.conf`:
-
-```xml
-<ossec_config>
-  <!-- Zeek Connection Logs -->
-  <localfile>
-    <location>/opt/zeek/logs/current/conn.log</location>
-    <log_format>json</log_format>
-    <label key="zeek.log_type">connection</label>
-    <label key="zeek.source">zeek_conn</label>
-    <only-future-events>yes</only-future-events>
-  </localfile>
-
-  <!-- Zeek DNS Logs -->
-  <localfile>
-    <location>/opt/zeek/logs/current/dns.log</location>
-    <log_format>json</log_format>
-    <label key="zeek.log_type">dns</label>
-    <label key="zeek.source">zeek_dns</label>
-    <only-future-events>yes</only-future-events>
-  </localfile>
-
-  <!-- Zeek SSL/TLS Logs -->
-  <localfile>
-    <location>/opt/zeek/logs/current/ssl.log</location>
-    <log_format>json</log_format>
-    <label key="zeek.log_type">ssl</label>
-    <label key="zeek.source">zeek_ssl</label>
-    <only-future-events>yes</only-future-events>
-  </localfile>
-
-  <!-- Zeek HTTP Logs -->
-  <localfile>
-    <location>/opt/zeek/logs/current/http.log</location>
-    <log_format>json</log_format>
-    <label key="zeek.log_type">http</label>
-    <label key="zeek.source">zeek_http</label>
-    <only-future-events>yes</only-future-events>
-  </localfile>
-
-  <!-- Zeek Weird Logs (anomalies) -->
-  <localfile>
-    <location>/opt/zeek/logs/current/weird.log</location>
-    <log_format>json</log_format>
-    <label key="zeek.log_type">weird</label>
-    <label key="zeek.source">zeek_weird</label>
-    <only-future-events>yes</only-future-events>
-  </localfile>
-</ossec_config>
-```
-
-#### 3.2.2 Custom Rule Development
-
-Security detection rules were implemented in `/var/ossec/etc/rules/zeek_custom_rules.xml`:
-
-```xml
-<group name="zeek,network_security">
-
-  <!-- Base rule for Zeek events -->
-  <rule id="110001" level="3">
-    <field name="zeek.log_type">\.+</field>
-    <description>Zeek network monitoring event</description>
-    <group>zeek,</group>
-  </rule>
-
-  <!-- Port scanning detection -->
-  <rule id="110010" level="8">
-    <if_sid>110001</if_sid>
-    <field name="zeek.log_type">connection</field>
-    <field name="conn_state">^S0$</field>
-    <field name="orig_bytes">^0$</field>
-    <field name="resp_bytes">^0$</field>
-    <description>Zeek: Port scanning detected from $(id.orig_h)</description>
-    <mitre>
-      <id>T1046</id>
-    </mitre>
-    <group>scanning,reconnaissance</group>
-  </rule>
-
-  <!-- DNS tunneling detection -->
-  <rule id="110020" level="8">
-    <if_sid>110001</if_sid>
-    <field name="zeek.log_type">dns</field>
-    <field name="qtype_name">TXT</field>
-    <field name="query" type="pcre2">.*[A-Za-z0-9+/=]{50,}.*</field>
-    <description>Zeek: Suspicious DNS TXT query - Possible tunneling: $(query)</description>
-    <mitre>
-      <id>T1071.004</id>
-    </mitre>
-    <group>dns_tunneling</group>
-  </rule>
-
-  <!-- Suspicious domain detection -->
-  <rule id="110021" level="9">
-    <if_sid>110001</if_sid>
-    <field name="zeek.log_type">dns</field>
-    <field name="query" type="pcre2">.*\.(tk|ml|ga|cf|onion)$</field>
-    <description>Zeek: DNS query to suspicious TLD: $(query)</description>
-    <mitre>
-      <id>T1090</id>
-    </mitre>
-    <group>suspicious_domains</group>
-  </rule>
-
-  <!-- Data exfiltration detection -->
-  <rule id="110040" level="10">
-    <if_sid>110001</if_sid>
-    <field name="zeek.log_type">connection</field>
-    <field name="orig_bytes" type="pcre2">^[1-9]\d{7,}$</field>
-    <description>Zeek: Large data upload - Potential exfiltration $(orig_bytes) bytes</description>
-    <mitre>
-      <id>T1041</id>
-    </mitre>
-    <group>exfiltration</group>
-  </rule>
-
-  <!-- Correlation rule for intensive scanning -->
-  <rule id="110070" level="12" frequency="10" timeframe="60">
-    <if_matched_sid>110010</if_matched_sid>
-    <same_source_ip/>
-    <description>Zeek: Intensive port scanning from $(id.orig_h)</description>
-    <group>aggressive_scanning</group>
-  </rule>
-
-</group>
-```
-
-## 4. Validation and Testing
-
-### 4.1 Integration Validation
-
-#### 4.1.1 Log Processing Verification
-
-Real-time log processing was verified through system monitoring:
+### 1. System Preparation
 
 ```bash
-# Monitor log collection activity
-sudo tail -f /var/ossec/logs/ossec.log | grep -i zeek
+# Update system
+sudo apt update && sudo apt upgrade -y
 
-# Output observed:
-# 2025/09/11 17:10:43 wazuh-logcollector[258051] read_json.c:166 at read_json(): DEBUG: Read 1 lines from /opt/zeek/logs/current/dns.log
-# 2025/09/11 17:10:53 wazuh-logcollector[258051] read_json.c:166 at read_json(): DEBUG: Read 1 lines from /opt/zeek/logs/current/conn.log
-# 2025/09/11 17:10:59 wazuh-logcollector[258051] read_json.c:166 at read_json(): DEBUG: Read 2 lines from /opt/zeek/logs/current/conn.log
+# Check available network interfaces
+ip addr show
+# Note the interface name (e.g., eno1, eth0, enp0s3)
 ```
 
-#### 4.1.2 Alert Generation Testing
+---
 
-Controlled testing validated rule functionality:
+### 2. Installation via Official Repository
+
+⚠️ Validated Method — Worked 100%
 
 ```bash
-# Port scanning simulation test
-echo '{"zeek":{"log_type":"connection","source":"zeek_conn"},"conn_state":"S0","orig_bytes":"0","resp_bytes":"0","id":{"orig_h":"192.168.1.100"}}' | sudo /var/ossec/bin/wazuh-logtest
+# Add Zeek official repository
+echo 'deb http://download.opensuse.org/repositories/security:/zeek/xUbuntu_22.04/ /' | sudo tee /etc/apt/sources.list.d/security:zeek.list
 
-# Results:
-# **Phase 3: Completed filtering (rules).
-#     id: '110010'
-#     level: '8'
-#     description: 'Zeek: Port scanning detected from 192.168.1.100'
-#     groups: '['zeek', 'network_securityscanning', 'reconnaissance']'
-#     mitre.id: '['T1046']'
-#     mitre.tactic: '['Discovery']'
-#     mitre.technique: '['Network Service Discovery']'
+# Add repository GPG key
+curl -fsSL https://download.opensuse.org/repositories/security:zeek/xUbuntu_22.04/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/security_zeek.gpg > /dev/null
+
+# Update package list
+sudo apt update
+
+# Install full Zeek package
+sudo apt install -y zeek
+
+# Verify installation
+/opt/zeek/bin/zeek --version
 ```
 
-### 4.2 Performance Metrics
+Expected result:
 
-#### 4.2.1 Event Processing Statistics
+```
+/opt/zeek/bin/zeek version 7.2.2
+```
 
-Alert generation statistics from production traffic:
+---
+
+### 3. Installed Files Location (Post-Installation)
 
 ```bash
-# Alert frequency analysis
-sudo cat /var/ossec/logs/alerts/alerts.json | jq 'select(.rule.groups[] | contains("zeek")) | .rule.id' | sort | uniq -c
-
-# Results:
-#     732 "110001"  # Base Zeek events
-#       3 "110010"  # Port scanning detections
+# Inspect installed structure
+ls -la /opt/zeek/
 ```
 
-#### 4.2.2 System Resource Utilization
+Expected structure:
 
-Wazuh Manager performance remained stable with the following observed characteristics:
+```
+/opt/zeek/
+├── bin/          # Executables (zeek, zeekctl)
+├── etc/          # Configuration files
+├── logs/         # Symbolic link to /opt/zeek/spool/zeek
+├── share/        # Scripts and libraries
+└── spool/        # Zeek logs and state
+```
 
-- Event processing rate: ~335 events processed (firedtimes: 335)
-- Memory utilization: 788.5MB (peak: 791.5MB)
-- CPU load: 16.610s total processing time
-- Active processes: 375 concurrent tasks
+---
 
-## 5. Results and Analysis
+### 4. Network Configuration
 
-### 5.1 Functional Validation
-
-The integration successfully achieved the following objectives:
-
-1. **Real-time Log Ingestion**: JSON-formatted Zeek logs are successfully parsed and processed by the Wazuh Manager
-2. **Custom Rule Processing**: Security detection rules correctly identify network anomalies with appropriate severity levels
-3. **MITRE ATT&CK Mapping**: Detected events are properly tagged with relevant MITRE framework identifiers
-4. **Alert Correlation**: Frequency-based correlation rules enable detection of sustained attack patterns
-
-### 5.2 Detection Capabilities
-
-Validated detection scenarios include:
-
-- **Network Reconnaissance** (T1046): Port scanning activities detected through connection state analysis
-- **DNS Tunneling** (T1071.004): Suspicious TXT queries with base64-encoded content
-- **Data Exfiltration** (T1041): Large data transfers exceeding defined thresholds
-- **Suspicious Infrastructure** (T1090): DNS queries to known malicious TLDs
-
-### 5.3 Operational Metrics
-
-- **Event Processing Latency**: Sub-second processing for individual events
-- **Storage Efficiency**: JSON format provides structured data with minimal overhead
-- **Scaling Capacity**: Single-node configuration supports up to 5,000 events per second
-- **False Positive Rate**: Minimal false positives observed in production traffic
-
-## 6. Production Deployment Considerations
-
-### 6.1 Performance Optimization
-
-For high-throughput environments, consider the following optimizations:
+#### 4.1 Configure Local Networks
 
 ```bash
-# Wazuh Manager tuning
-# /var/ossec/etc/local_internal_options.conf
-analysisd.worker_pool=8
-logcollector.max_lines=20000
-logcollector.max_files=2000
-
-# System-level optimizations
-# /etc/sysctl.d/99-wazuh-zeek.conf
-net.core.rmem_max = 268435456
-net.core.wmem_max = 268435456
-fs.file-max = 4194304
+# Edit local networks file
+sudo nano /opt/zeek/etc/networks.cfg
 ```
 
-### 6.2 Monitoring and Maintenance
+File content example:
 
-Implement continuous monitoring of integration health:
+```bash
+# List of local networks in CIDR notation, optionally followed by a descriptive
+# tag. Private address space defined by Zeek's Site::private_address_space set
+# (see scripts/base/utils/site.zeek) is automatically considered local. You can
+# disable this auto-inclusion by setting zeekctl's PrivateAddressSpaceIsLocal
+# option to 0.
+#
+# Examples of valid prefixes:
+#
+# 1.2.3.0/24        Admin network
+# 2607:f140::/32    Student network
+
+# ADD YOUR LOCAL NETWORK HERE:
+192.168.1.0/24    Private Home Network
+```
+
+⚠️ Adjust to your network:
+
+- For 10.x.x.x networks: `10.0.0.0/8`  
+- For 172.16.x.x networks: `172.16.0.0/12`  
+- For 192.168.x.x networks: `192.168.0.0/16` or a specific subnet
+
+#### 4.2 Configure Monitoring Interface
+
+```bash
+# Edit node configuration
+sudo nano /opt/zeek/etc/node.cfg
+```
+
+Find and change the line:
+
+```bash
+# BEFORE:
+interface=eth0
+
+# AFTER (replace with your interface):
+interface=eno1
+```
+
+Expected complete file:
+
+```bash
+# Example ZeekControl node configuration.
+#
+# This example has a standalone node ready to go except for possibly changing
+# the sniffing interface.
+
+# This is a complete standalone configuration.  Most likely you will
+# only need to change the interface.
+[zeek]
+type=standalone
+host=localhost
+interface=eno1
+```
+
+---
+
+### 5. Permission Configuration
+
+```bash
+# Check permissions of directories
+ls -la /opt/zeek/etc/
+ls -la /opt/zeek/logs/
+
+# Adjust permissions if necessary
+sudo chown -R root:zeek /opt/zeek/etc/
+sudo chmod 755 /opt/zeek/etc/
+sudo chmod 644 /opt/zeek/etc/*.cfg
+```
+
+---
+
+### 6. Starting Zeek
+
+#### 6.1 Add to PATH (Optional)
+
+```bash
+# Temporary (current session only)
+export PATH="/opt/zeek/bin:$PATH"
+
+# Permanent (add to .bashrc)
+echo 'export PATH="/opt/zeek/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+#### 6.2 Use ZeekControl
+
+```bash
+# Enter the control console (MUST use sudo)
+sudo /opt/zeek/bin/zeekctl
+```
+
+Commands inside zeekctl:
+
+```bash
+# Install configuration
+install
+
+# Check configuration
+check
+
+# Start Zeek
+start
+
+# Check status
+status
+
+# Exit
+exit
+```
+
+Expected `status` output:
+
+```
+Name         Type       Host          Status    Pid    Started
+zeek         standalone localhost     running   XXXXX  DD MMM HH:MM:SS
+```
+
+---
+
+### 7. Installation Verification
+
+#### 7.1 Check Process
+
+```bash
+# Check if Zeek is running
+sudo /opt/zeek/bin/zeekctl status
+
+# Check system processes
+ps aux | grep zeek
+```
+
+#### 7.2 Check Logs
+
+```bash
+# Wait a few minutes to generate logs
+sleep 120
+
+# List log files
+sudo ls -la /opt/zeek/logs/current/
+
+# Check main logs line counts
+sudo wc -l /opt/zeek/logs/current/conn.log
+sudo wc -l /opt/zeek/logs/current/dns.log
+
+# View real data (skip headers)
+sudo tail -n +10 /opt/zeek/logs/current/conn.log | head -3
+```
+
+#### 7.3 Generate Test Traffic
+
+```bash
+# Generate traffic for capture
+ping -c 5 google.com
+curl -s http://google.com > /dev/null
+
+# Wait and check new logs
+sleep 30
+sudo tail -5 /opt/zeek/logs/current/conn.log
+sudo tail -5 /opt/zeek/logs/current/dns.log
+```
+
+---
+
+## Zeek Management Commands
+
+### Basic Operations
+
+```bash
+# Start Zeek
+sudo /opt/zeek/bin/zeekctl start
+
+# Stop Zeek
+sudo /opt/zeek/bin/zeekctl stop
+
+# Restart Zeek
+sudo /opt/zeek/bin/zeekctl restart
+
+# Check status
+sudo /opt/zeek/bin/zeekctl status
+
+# Check configuration
+sudo /opt/zeek/bin/zeekctl check
+```
+
+### Logs and Diagnostics
+
+```bash
+# View error logs
+sudo cat /opt/zeek/logs/current/stderr.log
+sudo cat /opt/zeek/logs/current/reporter.log
+
+# View statistics
+sudo cat /opt/zeek/logs/current/stats.log
+
+# Monitor logs in real time
+sudo tail -f /opt/zeek/logs/current/conn.log
+```
+
+---
+
+## Structure of Generated Logs
+
+### Main Files
+
+- **conn.log**: Network connections (TCP/UDP)  
+- **dns.log**: DNS queries  
+- **ssl.log**: TLS/SSL connections  
+- **http.log**: HTTP traffic  
+- **weird.log**: Anomalous activities  
+- **notice.log**: Alerts and notifications
+
+### Log Format
+
+- **Format**: TSV (Tab-Separated Values)  
+- **Headers**: Begin with `#`  
+- **Separator**: Tab (`\t`)
+
+Example structure:
+
+```
+#separator \x09
+#set_separator    ,
+#empty_field    (empty)
+#unset_field    -
+#path    conn
+#open    2025-08-03-15-34-22
+#fields    ts    uid    id.orig_h    id.orig_p    id.resp_h    id.resp_p    proto...
+```
+
+---
+
+## Known Issues and Solutions
+
+### 1. ZeekControl Permission Error
+
+```
+Error: unable to open database file: /opt/zeek/spool/state.db
+```
+
+Solution:
+
+```bash
+# ALWAYS use sudo with zeekctl
+sudo /opt/zeek/bin/zeekctl
+```
+
+### 2. Checksum Offloading Warning
+
+```
+WARNING: Your interface is likely receiving invalid TCP checksums
+```
+
+Not critical, but to resolve:
+
+```bash
+# Option 1: Ignore invalid checksums (add to zeekctl)
+echo "ZeekArgs=-C" | sudo tee -a /opt/zeek/etc/zeekctl.cfg
+
+# Option 2: Disable offloading on the interface
+sudo ethtool -K eno1 tx off rx off
+```
+
+### 3. Empty or No Log Data
+
+Check:
+
+1. Interface configured correctly  
+2. Network traffic present  
+3. Log file permissions
+
+---
+
+## Automated Installation Script
 
 ```bash
 #!/bin/bash
-# Health check script
-LOG_FILE="/var/log/zeek-wazuh-health.log"
-DATE=$(date "+%Y-%m-%d %H:%M:%S")
+# zeek-install.sh - Automated Zeek installation
 
-# Verify Wazuh services
-for service in wazuh-manager wazuh-indexer wazuh-dashboard; do
-    if systemctl is-active --quiet $service; then
-        echo "[$DATE] ✓ $service operational" >> $LOG_FILE
-    else
-        echo "[$DATE] ✗ $service failure detected" >> $LOG_FILE
-    fi
-done
+set -e
 
-# Monitor event processing rate
-RECENT_EVENTS=$(grep -c "zeek" /var/ossec/logs/alerts/alerts.log)
-echo "[$DATE] Events processed: $RECENT_EVENTS" >> $LOG_FILE
+echo "=== Installing Zeek v7.2.2 ==="
+
+# Check Ubuntu version
+if ! grep -q "Ubuntu 24.04" /etc/os-release; then
+    echo "WARNING: Tested only on Ubuntu 24.04"
+fi
+
+# Prompt for network interface
+read -p "Enter the network interface name (e.g., eno1, eth0): " INTERFACE
+read -p "Enter your local network (e.g., 192.168.1.0/24): " NETWORK
+
+# Add repository
+echo "Adding Zeek repository..."
+echo 'deb http://download.opensuse.org/repositories/security:/zeek/xUbuntu_22.04/ /' | sudo tee /etc/apt/sources.list.d/security:zeek.list
+curl -fsSL https://download.opensuse.org/repositories/security:zeek/xUbuntu_22.04/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/security_zeek.gpg > /dev/null
+
+# Install
+echo "Installing Zeek..."
+sudo apt update
+sudo apt install -y zeek
+
+# Configure network
+echo "Configuring local network..."
+echo "$NETWORK    Private Network" | sudo tee -a /opt/zeek/etc/networks.cfg
+
+# Configure interface
+echo "Configuring interface..."
+sudo sed -i "s/interface=eth0/interface=$INTERFACE/" /opt/zeek/etc/node.cfg
+
+# Initialize
+echo "Initializing Zeek..."
+sudo /opt/zeek/bin/zeekctl install
+sudo /opt/zeek/bin/zeekctl start
+
+# Verify
+echo "Verifying installation..."
+sudo /opt/zeek/bin/zeekctl status
+
+echo "=== Installation complete ==="
+echo "Logs at: /opt/zeek/logs/current/"
+echo "Control: sudo /opt/zeek/bin/zeekctl"
 ```
 
-## 7. Conclusions
+Usage:
 
-The Zeek-Wazuh integration represents a successful implementation of enterprise-grade network security monitoring capabilities. The solution demonstrates effective real-time threat detection with comprehensive logging and alerting functionality.
+```bash
+chmod +x zeek-install.sh
+./zeek-install.sh
+```
 
-### 7.1 Key Achievements
+---
 
-1. **Seamless Integration**: Zero-agent deployment model reduces complexity and overhead
-2. **Comprehensive Coverage**: Multi-protocol analysis including DNS, HTTP, and SSL/TLS
-3. **Automated Detection**: Custom rules enable autonomous threat identification
-4. **Scalable Architecture**: Single-node deployment supports enterprise workloads
+## Validation Checklist
 
-### 7.2 Future Enhancements
+- [ ] Ubuntu 24.04 system updated  
+- [ ] Zeek repository added  
+- [ ] Zeek v7.2.2 installed  
+- [ ] `/opt/zeek/etc/networks.cfg` configured  
+- [ ] `/opt/zeek/etc/node.cfg` configured  
+- [ ] ZeekControl executed with sudo  
+- [ ] Status shows "running"  
+- [ ] Logs being generated in `/opt/zeek/logs/current/`  
+- [ ] Traffic being captured (conn.log, dns.log)  
+- [ ] Permissions adjusted as required
 
-Recommended improvements for expanded capabilities:
+---
 
-- **Machine Learning Integration**: Implement behavioral analysis for anomaly detection
-- **Threat Intelligence Feeds**: Integrate external IoC sources for enhanced detection
-- **Automated Response**: Develop active response mechanisms for threat mitigation
-- **Geographic Correlation**: Add GeoIP analysis for advanced threat profiling
+## Conclusion
 
-### 7.3 Operational Readiness
+This methodology has been tested and validated on Ubuntu 24.04 LTS. Installation via the official repository is stable and reproducible. Zeek will be ready for general security monitoring and integration with other analysis tools.
 
-The implemented solution is production-ready and provides:
-
-- Real-time network visibility
-- Automated threat detection
-- Compliance-ready logging
-- Scalable monitoring infrastructure
-
-## 8. References
-
-1. Zeek Network Security Monitor Documentation: https://docs.zeek.org/
-2. Wazuh SIEM Platform Documentation: https://documentation.wazuh.com/
-3. MITRE ATT&CK Framework: https://attack.mitre.org/
-4. Ubuntu Server Documentation: https://ubuntu.com/server/docs
+**Estimated installation time**: 15–30 minutes  
+**Resources consumed**: ~300MB RAM, ~100MB disk space initially

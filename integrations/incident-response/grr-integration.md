@@ -91,7 +91,7 @@ docker compose version
     ```
 
 3.  **Paste Configuration:**
-    Copy and paste the following YAML content into the editor. **Crucially, change `EXTERNAL_HOSTNAME` to your host's IP address** and **replace the default `ADMIN_PASSWORD` (`Qbxy@123`) with a strong, unique password.**
+    Copy and paste the following YAML content into the editor. **Crucially, change `EXTERNAL_HOSTNAME` to your host's IP address** and **replace the default `ADMIN_PASSWORD` (`password`) with a strong, unique password.**
 
     ```yaml
     services:
@@ -103,7 +103,7 @@ docker compose version
           # IMPORTANT: Set this to the IP or DNS name GRR clients will use to reach the server.
           - EXTERNAL_HOSTNAME=192.168.1.130
           # IMPORTANT: Set the initial password for the 'admin' user. CHANGE THIS!
-          - ADMIN_PASSWORD=Qbxy@123
+          - ADMIN_PASSWORD=password
         ports:
           # Maps Host Port 9008 (localhost only) -> Container Port 8000 (GRR UI)
           - "127.0.0.1:9008:8000"

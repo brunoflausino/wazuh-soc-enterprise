@@ -133,7 +133,10 @@ If Filebeat was previously configured to read `events.jsonl`, neutralize it (we 
 **Neutral minimal Filebeat config (no SpiderFoot):**
 
 ```bash
+# Backup existing Filebeat config with timestamp
 sudo cp -a /etc/filebeat/filebeat.yml /etc/filebeat/filebeat.yml.bak.$(date +%Y%m%d_%H%M%S)
+
+# Write minimal neutral Filebeat configuration (no SpiderFoot)
 sudo tee /etc/filebeat/filebeat.yml > /dev/null <<'EOF'
 filebeat.modules: []
 filebeat.inputs:
@@ -154,20 +157,29 @@ logging.files:
   keepfiles: 3
   rotateeverybytes: 10485760
 EOF
+```
 
+```bash
+# Prepare directories and backup Filebeat registry files
 sudo install -d -m 0755 /var/log/filebeat-out
-# Backup and rotate registries if present
+
 TS=$(date +%Y%m%d_%H%M%S)
 sudo install -d -m 0750 /var/lib/filebeat/backup-registry-$TS
+
 [ -e /var/lib/filebeat/registry ] && sudo mv /var/lib/filebeat/registry /var/lib/filebeat/backup-registry-$TS/ || true
 [ -e /var/lib/filebeat/registry.old ] && sudo mv /var/lib/filebeat/registry.old /var/lib/filebeat/backup-registry-$TS/ || true
+
+# Fix ownership of Filebeat directories
 sudo chown -R root:root /var/lib/filebeat /var/log/filebeat-out || true
+
+# Test Filebeat config and restart service
 sudo filebeat test config -c /etc/filebeat/filebeat.yml || true
 sudo systemctl daemon-reload
 sudo systemctl restart filebeat
 ```
 
-This recovers Filebeat while ensuring it does not consume SpiderFoot logs.
+This recovers Filebeat while ensuring it does not consume SpiderFoot logs. These two blocks can be used as-is in a shell script or copy-pasted sequentially into the terminal for minimal neutral Filebeat setup without SpiderFoot integration.
+The first block backs up the current configuration and writes the minimal config to track /var/log/dpkg.log with local rotating file output.The second block ensures logging output directories exist, backs up the registry files, corrects permissions, tests the config, reloads systemd and restarts Filebeat.
 
 -----
 

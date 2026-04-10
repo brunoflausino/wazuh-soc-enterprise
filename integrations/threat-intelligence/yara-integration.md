@@ -2,53 +2,53 @@
 
 ## Overview
 
-This document describes the validated YARA malware detection integration implemented in Wazuh.
+This document records the validated YARA malware detection integration implemented for Wazuh SIEM.
 
 The integration provides:
 
-- real-time file scanning using YARA
-- automated triggering via File Integrity Monitoring (FIM)
-- active response execution
-- structured alert generation
-- OpenSearch indexing
-- dashboard visualization
+- real-time malware scanning of files added to or modified in a monitored directory
+- automatic triggering through Wazuh File Integrity Monitoring (FIM) and Active Response
+- YARA result logging and Wazuh decoding
+- centralized alert generation through custom Wazuh rules
+- OpenSearch indexing for search, aggregation, and dashboarding
+- visualization through the YARA Malware Detection Dashboard
 
 ---
 
 ## Environment
 
-| Component | Value |
-|----------|------|
-| OS | Ubuntu 24.04 LTS |
-| Wazuh | 4.14.2 |
-| YARA | 4.5.0 |
-| Monitored Path | /tmp/malware_samples |
-| Rules Path | /opt/yara/rules/yara_rules.yar |
-| Log Path | /opt/yara/logs/yara.log |
-| Rule IDs | 100300-100302 |
+OS: Ubuntu 24.04 LTS  
+Wazuh: 4.14.2  
+YARA: 4.5.0  
+
+Monitored path: /tmp/malware_samples  
+Rules path: /opt/yara/rules/yara_rules.yar  
+Log path: /opt/yara/logs/yara.log  
+
+Rule IDs: 100300, 100301, 100302  
 
 ---
 
 ## Detection Architecture
 
-FIM → Active Response → YARA → Log → Decoder → Rule → OpenSearch → Dashboard
+FIM -> Active Response -> YARA -> Log -> Decoder -> Rule -> OpenSearch -> Dashboard
 
 ---
 
 ## Installation
 
-### Packages
+Packages:
 
 sudo apt update  
 sudo apt install -y yara jq  
 
-### Directories
+Directories:
 
 sudo mkdir -p /opt/yara/rules  
 sudo mkdir -p /opt/yara/logs  
 sudo mkdir -p /tmp/malware_samples  
 
-### Permissions
+Permissions:
 
 sudo chown -R root:wazuh /opt/yara  
 sudo chmod -R 750 /opt/yara  
@@ -56,8 +56,6 @@ sudo chmod -R 750 /opt/yara
 ---
 
 ## Ruleset
-
-Validation rule:
 
 rule test_malware {
     strings:
@@ -70,11 +68,11 @@ rule test_malware {
 
 ## Wazuh Configuration
 
-### Syscheck
+Syscheck:
 
 <directories realtime="yes">/tmp/malware_samples</directories>
 
-### Active Response
+Active Response:
 
 command: yara_linux  
 rules_id: 100301,100302  
@@ -83,56 +81,63 @@ rules_id: 100301,100302
 
 ## Decoder
 
-yara.rule  
-yara.target  
-yara.match  
+Fields extracted:
+
+- yara.rule  
+- yara.target  
+- yara.match  
 
 ---
 
 ## Custom Rules
 
-100300 → detection  
-100301 → modified  
-100302 → added  
+100300: detection  
+100301: modified  
+100302: added  
 
 ---
 
 ## Validation
 
-### wazuh-logtest
+wazuh-logtest input:
 
 YARA_MATCH rule=test_malware target=/tmp/malware_samples/test.bin match="Detected"
 
 Expected:
-- rule 100300
-- level 12
+
+rule 100300  
+level 12  
 
 ---
 
-## OpenSearch
+## OpenSearch Validation
 
-Query example:
+The following queries were used during validation and may vary in production environments.
 
 GET wazuh-alerts-*/_search
+
+Observed during validation:
+
+Total hits: 11 (validation dataset)
 
 ---
 
 ## Dashboard
 
-### Alert Summary Metrics
-![metrics](assets/yara/yara-alert-summary-metrics.png)
+Alert Summary Metrics  
+assets/yara/yara-alert-summary-metrics.png  
 
-### Detections by Rule ID
-![rule-id](assets/yara/yara-detections-by-rule-id.png)
+Detections by Rule ID  
+assets/yara/yara-detections-by-rule-id.png  
 
-### Malware Rules Triggered
-![rules](assets/yara/yara-malware-rules-triggered.png)
+Malware Rules Triggered  
+assets/yara/yara-malware-rules-triggered.png  
 
-### Infected Files
-![files](assets/yara/yara-infected-files-detected.png)
+Infected Files  
+assets/yara/yara-infected-files-detected.png  
 
-### Detection Timeline
-![timeline](assets/yara/yara-detection-timeline.png)
+Detection Timeline  
+assets/yara/yara-detection-timeline.png  
 
 ---
 

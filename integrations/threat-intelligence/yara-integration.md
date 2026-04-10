@@ -124,20 +124,20 @@ Total hits: 11 (validation dataset)
 
 ## Dashboard
 
-Alert Summary Metrics  
-assets/yara/yara-alert-summary-metrics.png  
+### Alert Summary Metrics
+![YARA Alert Summary Metrics](assets/yara/yara-alert-summary-metrics.png)
 
-Detections by Rule ID  
-assets/yara/yara-detections-by-rule-id.png  
+### Detections by Rule ID
+![YARA Detections by Rule ID](assets/yara/yara-detections-by-rule-id.png)
 
-Malware Rules Triggered  
-assets/yara/yara-malware-rules-triggered.png  
+### Malware Rules Triggered
+![YARA Malware Rules Triggered](assets/yara/yara-malware-rules-triggered.png)
 
-Infected Files  
-assets/yara/yara-infected-files-detected.png  
+### Infected Files
+![YARA Infected Files Detected](assets/yara/yara-infected-files-detected.png)
 
-Detection Timeline  
-assets/yara/yara-detection-timeline.png  
+### Detection Timeline
+![YARA Detection Timeline](assets/yara/yara-detection-timeline.png)
 
 ---
 

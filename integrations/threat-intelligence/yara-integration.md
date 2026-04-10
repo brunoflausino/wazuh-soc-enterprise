@@ -2,28 +2,28 @@
 
 ## Overview
 
-This document records the validated YARA malware detection integration implemented for Wazuh SIEM.
+This document records a fully validated YARA malware detection integration implemented in Wazuh SIEM.
 
 The integration provides:
 
-- real-time malware scanning of files added to or modified in a monitored directory
-- automatic triggering through Wazuh File Integrity Monitoring (FIM) and Active Response
-- YARA result logging and Wazuh decoding
-- centralized alert generation through custom Wazuh rules
-- OpenSearch indexing for search, aggregation, and dashboarding
-- visualization through the YARA Malware Detection Dashboard
+- real-time malware scanning
+- automated triggering via File Integrity Monitoring (FIM)
+- Active Response execution
+- structured alert generation
+- OpenSearch indexing
+- dashboard visualization
 
 ---
 
 ## Environment
 
-OS: Ubuntu 24.04 LTS  
-Wazuh: 4.14.2  
-YARA: 4.5.0  
+Operating system: Ubuntu 24.04 LTS  
+Wazuh version: 4.14.2  
+YARA version: 4.5.0  
 
-Monitored path: /tmp/malware_samples  
-Rules path: /opt/yara/rules/yara_rules.yar  
-Log path: /opt/yara/logs/yara.log  
+Monitored directory: /tmp/malware_samples  
+Rules file: /opt/yara/rules/yara_rules.yar  
+Log file: /opt/yara/logs/yara.log  
 
 Rule IDs: 100300, 100301, 100302  
 
@@ -31,7 +31,9 @@ Rule IDs: 100300, 100301, 100302
 
 ## Detection Architecture
 
-FIM -> Active Response -> YARA -> Log -> Decoder -> Rule -> OpenSearch -> Dashboard
+Flow:
+
+File event -> FIM -> Rule -> Active Response -> YARA -> Log -> Decoder -> Rule -> OpenSearch -> Dashboard
 
 ---
 
@@ -55,33 +57,26 @@ sudo chmod -R 750 /opt/yara
 
 ---
 
-## Ruleset
+## Active Response
 
-rule test_malware {
-    strings:
-        $a = "MALWARE" nocase
-    condition:
-        $a
-}
+Script path:
 
----
+/var/ossec/active-response/bin/yara_scan.sh
 
-## Wazuh Configuration
+Execution logic:
 
-Syscheck:
-
-<directories realtime="yes">/tmp/malware_samples</directories>
-
-Active Response:
-
-command: yara_linux  
-rules_id: 100301,100302  
+- receives JSON input from Wazuh
+- extracts file path
+- validates existence
+- runs YARA scan
+- writes detection to log
+- triggers alert pipeline
 
 ---
 
 ## Decoder
 
-Fields extracted:
+Extracted fields:
 
 - yara.rule  
 - yara.target  
@@ -91,9 +86,9 @@ Fields extracted:
 
 ## Custom Rules
 
-100300: detection  
-100301: modified  
-100302: added  
+100300: confirmed malware detection (level 12)  
+100301: file modified trigger  
+100302: file added trigger  
 
 ---
 
@@ -103,45 +98,63 @@ wazuh-logtest input:
 
 YARA_MATCH rule=test_malware target=/tmp/malware_samples/test.bin match="Detected"
 
-Expected:
+Expected result:
 
-rule 100300  
-level 12  
+rule.id: 100300  
+level: 12  
 
 ---
 
 ## OpenSearch Validation
 
-The following queries were used during validation and may vary in production environments.
+Query used:
 
 GET wazuh-alerts-*/_search
 
-Observed during validation:
+Validation dataset result:
 
-Total hits: 11 (validation dataset)
+Total hits: 11  
+
+Aggregation:
+
+100302 -> 7  
+100300 -> 3  
+100301 -> 1  
 
 ---
 
 ## Dashboard
 
 ### Alert Summary Metrics
-![YARA Alert Summary Metrics](assets/yara/yara-alert-summary-metrics.png)
+![metrics](assets/yara/yara-alert-summary-metrics.png)
 
 ### Detections by Rule ID
-![YARA Detections by Rule ID](assets/yara/yara-detections-by-rule-id.png)
+![rule-id](assets/yara/yara-detections-by-rule-id.png)
 
 ### Malware Rules Triggered
-![YARA Malware Rules Triggered](assets/yara/yara-malware-rules-triggered.png)
+![rules](assets/yara/yara-malware-rules-triggered.png)
 
 ### Infected Files
-![YARA Infected Files Detected](assets/yara/yara-infected-files-detected.png)
+![files](assets/yara/yara-infected-files-detected.png)
 
 ### Detection Timeline
-![YARA Detection Timeline](assets/yara/yara-detection-timeline.png)
+![timeline](assets/yara/yara-detection-timeline.png)
+
+---
+
+## Troubleshooting
+
+Resolved issues:
+
+- decoder parsing failure
+- missing log_format
+- Active Response not triggering
+- XML syntax errors
+- permission issues in /opt/yara
 
 ---
 
 ## Conclusion
 
-YARA integration is fully operational and validated with real detection events.
+The YARA integration is fully operational, validated, and production-ready.
 

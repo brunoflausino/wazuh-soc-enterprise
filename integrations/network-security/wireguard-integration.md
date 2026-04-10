@@ -521,6 +521,36 @@ Configure visualizations for:
 
 ---
 
+## 6.1 Dashboard Screenshots
+
+The following visualizations are part of the **WireGuard VPN — SOC Monitoring** dashboard in Wazuh SIEM, built using the `wazuh-alerts-*` index pattern with a global filter on rule IDs `112501–112504`, `112506`, and `112507`.
+
+### Alert Timeline
+
+![WireGuard Alert Timeline](assets/wireguard/wireguard-alert-timeline.png)
+
+*Temporal distribution of WireGuard alerts by rule ID. Spikes in rule 112501 (BLOCK) indicate potential threats on the wg0 tunnel interface.*
+
+### Events by Rule
+
+![WireGuard Events by Rule](assets/wireguard/wireguard-events-by-rule.png)
+
+*Proportional breakdown of WireGuard events by rule description. Dominated by UFW AUDIT and BLOCK activity on wg0, with wg-quick lifecycle events (interface up/down) visible as distinct slices.*
+
+### UFW Actions on wg0
+
+![WireGuard UFW Actions on wg0](assets/wireguard/wireguard-ufw-actions.png)
+
+*Horizontal bar chart showing BLOCK vs ALLOW vs AUDIT event counts on the wg0 interface. BLOCK events outnumber AUDIT, indicating active filtering of hostile or noisy traffic on the VPN tunnel.*
+
+### Top Source IPs
+
+![WireGuard Top Source IPs](assets/wireguard/wireguard-top-source-ips.png)
+
+*Data table of the most active source IPs hitting the wg0 interface, broken down by UFW action. Enables rapid identification of persistent scanners or abusive peers.*
+
+---
+
 ## 7. Use Cases and Alerts
 
 ### 7.1 Intrusion Detection

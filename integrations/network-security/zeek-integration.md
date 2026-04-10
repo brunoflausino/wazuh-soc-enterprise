@@ -446,6 +446,42 @@ chmod +x zeek-install.sh
 
 ---
 
+## Dashboard Screenshots
+
+The following visualizations are part of the **Zeek NSM - Network Security Monitor** dashboard in Wazuh SIEM, built using the `wazuh-alerts-*` index pattern with a global filter on `rule.groups: zeek`. All five panels were validated with 1,219 indexed alerts across 7 Zeek log streams (CONN, DNS, HTTP, SSL, FILES, NOTICE, WEIRD).
+
+### Network Events Timeline
+
+![Zeek Network Events Timeline](assets/zeek/zeek-network-events-timeline.png)
+
+*Multi-line time-series chart showing event volume per log type over time. CONN and DNS dominate baseline activity; spikes indicate traffic bursts or scan events.*
+
+### Event Distribution by Log Type
+
+![Zeek Event Distribution by Log Type](assets/zeek/zeek-event-distribution.png)
+
+*Pie chart showing the proportional breakdown of Zeek events by log type. DNS (47.89%) and CONN (47.68%) account for the vast majority of observed network activity, with WEIRD events (3.43%) flagging anomalous traffic.*
+
+### Top 10 Source IPs
+
+![Zeek Top 10 Source IPs](assets/zeek/zeek-top-source-ips.png)
+
+*Horizontal bar chart of the most active source IP addresses observed by Zeek. Internal IPv6 and LAN addresses dominate, consistent with a monitored local network segment.*
+
+### Top 15 Destination Ports
+
+![Zeek Top 15 Destination Ports](assets/zeek/zeek-top-destination-ports.png)
+
+*Vertical bar chart of the most targeted destination ports. Port 53 (DNS) and 5353 (mDNS) lead, followed by 443 (HTTPS) — reflecting normal LAN and internet traffic patterns.*
+
+### Top 10 Destination IPs
+
+![Zeek Top 10 Destination IPs](assets/zeek/zeek-top-destination-ips.png)
+
+*Data table ranking the most contacted destination IPs by connection count. Multicast and DNS resolver addresses dominate, with 8,667 total connections tracked across the top 10 destinations.*
+
+---
+
 ## Conclusion
 
 This methodology has been tested and validated on Ubuntu 24.04 LTS. Installation via the official repository is stable and reproducible. Zeek will be ready for general security monitoring and integration with other analysis tools.

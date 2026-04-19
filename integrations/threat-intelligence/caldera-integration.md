@@ -529,7 +529,6 @@ Dashboard screenshots from a validated run (5 techniques x 30 events each):
 
 ### Full MITRE ATT&CK dashboard view
 
-![Full dashboard view](assets/caldera/dashboard-full-view.png)
 
 **Techniques confirmed in Wazuh alerts:**
 

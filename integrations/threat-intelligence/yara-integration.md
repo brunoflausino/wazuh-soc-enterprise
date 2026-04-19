@@ -707,7 +707,11 @@ GET wazuh-alerts-*/_mapping/field/data.yara.rule,data.yara.target,data.yara.matc
 
 **Filter:** `rule.id: 100300`
 
-![YARA Infected Files Detected](assets/yara/05-infected-files-detected.png)
+![YARA Infected Files Detected — Page 1](assets/yara/05a-infected-files-detected.png)
+
+![YARA Infected Files Detected — Page 2](assets/yara/05b-infected-files-detected.png)
+
+![YARA Infected Files Detected — Page 3](assets/yara/05c-infected-files-detected.png)
 
 ---
 

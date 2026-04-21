@@ -523,31 +523,107 @@ Configure visualizations for:
 
 ## 6.1 Dashboard Screenshots
 
-The following visualizations are part of the **WireGuard VPN — SOC Monitoring** dashboard in Wazuh SIEM, built using the `wazuh-alerts-*` index pattern with a global filter on rule IDs `112501–112504`, `112506`, and `112507`.
+### Dashboard Summary
 
-### Alert Timeline
+**Name:** `WireGuard VPN — SOC Monitoring`
+**Description:** Real-time monitoring of WireGuard VPN tunnel activity with UFW firewall correlation on the wg0 interface
+**Index Pattern:** `wazuh-alerts-*`
+**Base Filter (DQL):** `rule.id: "112501" or rule.id: "112502" or rule.id: "112503" or rule.id: "112504" or rule.id: "112506" or rule.id: "112507"`
 
-![WireGuard Alert Timeline](assets/wireguard/wireguard-alert-timeline.png)
+### Panel Layout
 
-*Temporal distribution of WireGuard alerts by rule ID. Spikes in rule 112501 (BLOCK) indicate potential threats on the wg0 tunnel interface.*
+```
++-----------------------------------+-----------------------------------+
+|   WireGuard: Alert Timeline       |   WireGuard: Events by Rule       |
+|   (Area Chart)                    |   (Donut Chart)                   |
++-----------------------------------+-----------------------------------+
+|   WireGuard: UFW Actions on wg0   |   WireGuard: Top Source IPs       |
+|   (Horizontal Bar)                |   (Data Table)                    |
++-----------------------------------+-----------------------------------+
+```
 
-### Events by Rule
+---
 
-![WireGuard Events by Rule](assets/wireguard/wireguard-events-by-rule.png)
+### Visualization 1: Alert Timeline
 
-*Proportional breakdown of WireGuard events by rule description. Dominated by UFW AUDIT and BLOCK activity on wg0, with wg-quick lifecycle events (interface up/down) visible as distinct slices.*
+**Type:** Area Chart
+**Title:** `WireGuard: Alert Timeline`
 
-### UFW Actions on wg0
+| Setting | Value |
+|---|---|
+| Y-Axis | Count (Alert Count) |
+| X-Axis | Date Histogram — `@timestamp` |
+| Split Series | Terms — `rule.id` |
+| Time Range | Last 4 weeks |
 
-![WireGuard UFW Actions on wg0](assets/wireguard/wireguard-ufw-actions.png)
+**DQL Filter:** `rule.id: "112501" or rule.id: "112502" or rule.id: "112503" or rule.id: "112504" or rule.id: "112506" or rule.id: "112507"`
 
-*Horizontal bar chart showing BLOCK vs ALLOW vs AUDIT event counts on the wg0 interface. BLOCK events outnumber AUDIT, indicating active filtering of hostile or noisy traffic on the VPN tunnel.*
+![WireGuard Alert Timeline](assets/wireguard/dashboard-alert-timeline.png)
 
-### Top Source IPs
+*Temporal distribution of WireGuard alerts by rule ID. Spike around 2026-03-31 shows burst activity dominated by rules 112502 (UFW audit) and 112503 (UFW blocked traffic), with rules 112501, 112506, and 112507 contributing at lower volumes. Steady-state after early April confirms the tunnel is operating under normal conditions.*
 
-![WireGuard Top Source IPs](assets/wireguard/wireguard-top-source-ips.png)
+---
 
-*Data table of the most active source IPs hitting the wg0 interface, broken down by UFW action. Enables rapid identification of persistent scanners or abusive peers.*
+### Visualization 2: Events by Rule
+
+**Type:** Donut Chart
+**Title:** `WireGuard: Events by Rule`
+
+| Setting | Value |
+|---|---|
+| Slice Size | Count |
+| Split Slices | Terms — `rule.description` |
+| Order | Descending |
+| Size | 15 |
+
+**DQL Filter:** `rule.id: "112501" or rule.id: "112502" or rule.id: "112503" or rule.id: "112504" or rule.id: "112506" or rule.id: "112507"`
+
+![WireGuard Events by Rule](assets/wireguard/dashboard-events-by-rule.png)
+
+*Proportional breakdown of WireGuard events by rule description. Dominated by UFW AUDIT and BLOCK activity on wg0 targeting multicast address 239.255.255.250:3702 (WS-Discovery), with wg-quick lifecycle events (interface up/down) visible as distinct slices at ~10.71% each.*
+
+---
+
+### Visualization 3: UFW Actions on wg0
+
+**Type:** Horizontal Bar
+**Title:** `WireGuard: UFW Actions on wg0`
+
+| Setting | Value |
+|---|---|
+| Y-Axis (Bucket) | Terms — `data.action` |
+| X-Axis | Count (Event Count) |
+| Order | Descending |
+| Time Range | Last 3 weeks |
+
+**DQL Filter:** `rule.id: "112501" or rule.id: "112502" or rule.id: "112503" or rule.id: "112504" or rule.id: "112506" or rule.id: "112507"`
+
+![WireGuard UFW Actions on wg0](assets/wireguard/dashboard-ufw-actions.png)
+
+*Horizontal bar chart showing BLOCK (79), AUDIT (35), and ALLOW (12) event counts on the wg0 interface. BLOCK events clearly dominate, indicating active filtering of hostile or noisy traffic traversing the VPN tunnel.*
+
+---
+
+### Visualization 4: Top Source IPs
+
+**Type:** Data Table
+**Title:** `WireGuard: Top Source IPs`
+
+| Setting | Value |
+|---|---|
+| Column 1 | Terms — `data.srcip` (Source IP) |
+| Column 2 | Terms — `data.action` (Action) |
+| Metric | Count (Events) |
+| Order | Descending |
+| Size | 15 |
+
+**DQL Filter:** `rule.id: "112501" or rule.id: "112502" or rule.id: "112503" or rule.id: "112504" or rule.id: "112506" or rule.id: "112507"`
+
+![WireGuard Top Source IPs — Page 1](assets/wireguard/dashboard-top-source-ips-p1.png)
+
+![WireGuard Top Source IPs — Page 2](assets/wireguard/dashboard-top-source-ips-p2.png)
+
+*Data table of the most active source IPs on the wg0 interface, broken down by UFW action. Internal host 10.0.0.1 dominates with 42 BLOCK, 15 AUDIT, and 12 ALLOW events. IPv6 link-local address `fe80::bcbb:897b:0b0b:9632` appears with 20 AUDIT events. External IPs (103.253.145.12, 185.220.101.45, 91.207.175.66, etc.) exclusively show BLOCK actions, enabling rapid identification of persistent scanners or abusive peers.*
 
 ---
 

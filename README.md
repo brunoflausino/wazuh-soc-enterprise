@@ -1,69 +1,102 @@
-# 🛡️ Enterprise SOC Platform with Wazuh SIEM/XDR
+# 🛡️ Wazuh SOC Enterprise — Detection Engineering Lab
 
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20LTS-orange)](https://ubuntu.com)
-[![Wazuh](https://img.shields.io/badge/Wazuh-4.13.1-blue)](https://wazuh.com)
-[![Tools](https://img.shields.io/badge/Integrated%20Tools-20%2B-green)](integrations/)
-[![Status](https://img.shields.io/badge/Status-Active%20Development-yellow)]()
+[![Wazuh](https://img.shields.io/badge/Wazuh-4.14.5-blue)](https://wazuh.com)
+[![Rules](https://img.shields.io/badge/Custom%20Rules-168-success)](./integrations)
+[![Decoders](https://img.shields.io/badge/Custom%20Decoders-51-success)](./integrations)
+[![Documented Integrations](https://img.shields.io/badge/Documented%20Integrations-17-green)](./integrations)
+[![Status](https://img.shields.io/badge/Status-Active%20Development-yellow)](./integrations)
 
 ## Overview
 
-Complete enterprise-grade Security Operations Center (SOC) platform built on Ubuntu 24.04 LTS bare metal server, featuring Wazuh SIEM/XDR as the core with 20+ integrated security tools for comprehensive threat detection, incident response, and security orchestration.
+Production-grade Security Operations Center (SOC) lab on **Ubuntu 24.04 LTS bare metal**, with **Wazuh 4.14.5 SIEM/XDR** as the core. Engineering-driven, hands-on, end-to-end ownership — from data ingestion to dashboard delivery.
 
-## 🚀 Quick Navigation
+Maintained by [Bruno Flausino](https://www.linkedin.com/in/brflausino/) — SOC Engineer, Detection Engineering & SIEM Specialist.
 
-- 📚 **[Full Integration Catalog](integrations/)** - All 20+ tool integrations
-- 🔒 **[Network Security Tools](integrations/network-security/)** - IDS/IPS, VPN, Firewall
-- 🎯 **[Threat Intelligence](integrations/threat-intelligence/)** - MITRE ATT&CK, OSINT, Honeypots
-- 🚨 **[Incident Response](integrations/incident-response/)** - DFIR, SOAR, Forensics
-- 🔐 **[Authentication](integrations/authentication/)** - RADIUS, 802.1X
-- 💾 **[Data Protection](integrations/data-protection/)** - Encryption, AV, Backup
+## 🎯 Detection Engineering — by the numbers
 
-## 📊 Integrated Security Stack
+| Metric | Value |
+| --- | --- |
+| Custom rules authored | **168** |
+| Custom decoders authored | **51** |
+| Rule ID range | `100000 – 120064` |
+| Wazuh version | `4.14.5` |
+| MITRE ATT&CK techniques referenced (active rules) | T1021, T1046, T1055, T1059, T1070, T1070.006, T1078, T1082, T1083, T1105, T1110, T1110.001, T1119, T1136, T1499, T1543, T1548.001, T1562 |
 
-| Category | Tools | Status |
-|----------|-------|--------|
+End-to-end validation pipeline: `wazuh-logtest` → `wazuh-analysisd -t` → OpenSearch DevTools, before any rule reaches production. Disciplined change management: timestamped backups, TimeShift snapshots. English-language documentation for every integration.
+
+## 📊 Integrated Security Stack — 17 Documented
+
+| Category | Tools | Documentation |
+| --- | --- | --- |
 | **Core SIEM** | Wazuh Manager, Indexer, Dashboard, Filebeat | ✅ Operational |
-| **Network Security** | Suricata, Zeek, WireGuard, UFW | ✅ Operational |
-| **Threat Intelligence** | CALDERA, SpiderFoot, Conpot | ✅ Operational |
-| **Incident Response** | DFIR-IRIS, GRR, Shuffle SOAR | ✅ Operational |
-| **Authentication** | FreeRADIUS, Radsecproxy | ✅ Operational |
-| **Data Protection** | ClamAV, VeraCrypt, NWIPE, Restic | ✅ Operational |
+| **Network Security** | Suricata, Zeek NSM, WireGuard, UFW | ✅ Documented |
+| **Threat Intelligence & Detection** | CALDERA, YARA Forge, Falco (eBPF), Cowrie, Auditd | ✅ Documented |
+| **Incident Response** | Velociraptor | ✅ Documented |
+| **Authentication** | FreeRADIUS, Radsecproxy | ✅ Documented |
+| **Vulnerability Management** | OpenVAS / GVM | ✅ Documented |
+| **Data Protection** | ClamAV, VeraCrypt, NWIPE, Restic | ✅ Documented |
+
+📚 **[Browse the integrations folder](./integrations)** — each integration ships its own markdown guide and assets.
+
+## 🛠️ Additional Lab Components — documentation in progress
+
+Deployed in the lab; integration guides being added:
+
+- **SOAR & Orchestration**: Shuffle (Docker stack — frontend, backend, opensearch, orborus, Tenzir node)
+- **Threat Intel Platforms**: MISP, SpiderFoot
+- **DFIR**: GRR Rapid Response, DFIR-IRIS
+- **ICS/SCADA Honeypot**: Conpot
+- **Vulnerability scanner**: Nuclei
+
+## 🧪 ML Research
+
+### Local LLM runtime — Ollama
+Local LLM runtime deployed via Docker (`wazuh-ollama`) for on-prem experimentation with LLM-assisted log triage and alert summarisation. No security data leaves the lab.
+
+### GNN Anomaly Detection Prototype (research stage)
+Custom Python anomaly detector (~1,200 lines) using **PyTorch + torch_geometric** (GCNConv / SAGEConv / GATConv) with **networkx** graph construction and **IsolationForest** hybrid scoring. Ingests host/IP/process graphs from Wazuh OpenSearch and targets:
+
+- Scanners (T1046, T1595)
+- C2 communication (T1071, T1102)
+- High-volume / DDoS traffic (T1498)
+- Lateral movement (T1570)
+
+> **Status**: research-stage component. Native Wazuh integration (rule emission + indexed events) is in progress. Code is not yet a production pipeline.
+
+## 🔍 Wireless & Network Security Assessments
+
+The lab is also used for hands-on Wi-Fi and internal network security assessments following **OWASP / NIST SP 800-115 / PTES** methodology:
+
+- Passive 802.11 monitoring (Atheros AR9271, monitor mode)
+- Nmap service discovery and OS fingerprinting (`-sV` / `-sC` / `-O`)
+- NSE vulnerability scripts
+- WPS configuration testing
+- RSN / PMF (802.11w) capability analysis
+- TLS / SSL and cryptographic review (SHA-1, MD5, certificate validation)
+
+Findings documented as formal security reports.
 
 ## 🖥️ System Requirements
 
-- **Operating System**: Ubuntu 24.04 LTS (bare metal)
-- **RAM**: 32GB minimum (64GB recommended)
+- **OS**: Ubuntu 24.04 LTS (bare metal)
+- **RAM**: 32 GB minimum (64 GB recommended)
 - **CPU**: 8+ cores (16 recommended)
-- **Storage**: 500GB+ SSD
-- **Network**: Static IP, 1Gbps+ connection
-
-## 🌐 Service Access Points
-
-| Service | URL | Default Port |
-|---------|-----|--------------|
-| Wazuh Dashboard | https://localhost | 443 |
-| CALDERA C2 | http://localhost:8888 | 8888 |
-| Shuffle SOAR | https://localhost:3443 | 3443 |
-| DFIR-IRIS | http://localhost:9094 | 9094 |
-| GRR Response | http://localhost:9008 | 9008 |
-| SpiderFoot | http://127.0.0.1:5001 | 5001 |
+- **Storage**: 500 GB+ SSD
+- **Network**: static IP, 1 Gbps+
 
 ## 📈 Project Status
 
-- ✅ Core platform deployed
-- ✅ All 20+ tools integrated
-- 🚧 Documentation in progress (framework complete)
-- 🚧 Integration guides being added weekly
-- 📝 Automation scripts coming soon
-
-## 🤝 Contributing
-
-This project is actively being documented. Check back regularly for updates or star the repository to be notified of new content.
+- ✅ Core platform deployed and operational on bare metal
+- ✅ 168 custom rules + 51 decoders, validated and active
+- ✅ 17 integrations fully documented
+- 🚧 Documentation rolling out for additional lab components (Shuffle, MISP, SpiderFoot, DFIR-IRIS, GRR, Conpot, Nuclei)
+- 🚧 GNN ML prototype — Wazuh native integration pending
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) file
+MIT License — see [LICENSE](./LICENSE).
 
 ---
 
-**Note**: This is a real, operational SOC platform running on bare metal. Documentation is being migrated from internal notes to public guides.
+**Note**: This is a real, operational SOC lab running on bare metal. Documentation is migrated progressively from internal notes to public guides.

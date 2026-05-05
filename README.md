@@ -4,7 +4,7 @@
 [![Wazuh](https://img.shields.io/badge/Wazuh-4.14.5-blue)](https://wazuh.com)
 [![Rules](https://img.shields.io/badge/Custom%20Rules-168-success)](./integrations)
 [![Decoders](https://img.shields.io/badge/Custom%20Decoders-51-success)](./integrations)
-[![Documented Integrations](https://img.shields.io/badge/Documented%20Integrations-17-green)](./integrations)
+[![Documented Integrations](https://img.shields.io/badge/Documented%20Integrations-18-green)](./integrations)
 [![Status](https://img.shields.io/badge/Status-Active%20Development-yellow)](./integrations)
 
 ## Overview
@@ -25,7 +25,7 @@ Maintained by [Bruno Flausino](https://www.linkedin.com/in/brflausino/) — SOC 
 
 End-to-end validation pipeline: `wazuh-logtest` → `wazuh-analysisd -t` → OpenSearch DevTools, before any rule reaches production. Disciplined change management: timestamped backups, TimeShift snapshots. English-language documentation for every integration.
 
-## 📊 Integrated Security Stack — 17 Documented
+## 📊 Integrated Security Stack — 18 Documented
 
 | Category | Tools | Documentation |
 | --- | --- | --- |
@@ -33,6 +33,7 @@ End-to-end validation pipeline: `wazuh-logtest` → `wazuh-analysisd -t` → Ope
 | **Network Security** | Suricata, Zeek NSM, WireGuard, UFW | ✅ Documented |
 | **Threat Intelligence & Detection** | CALDERA, YARA Forge, Falco (eBPF), Cowrie, Auditd | ✅ Documented |
 | **Incident Response** | Velociraptor | ✅ Documented |
+| **System Inventory** | OSQuery | ✅ Documented |
 | **Authentication** | FreeRADIUS, Radsecproxy | ✅ Documented |
 | **Vulnerability Management** | OpenVAS / GVM | ✅ Documented |
 | **Data Protection** | ClamAV, VeraCrypt, NWIPE, Restic | ✅ Documented |
@@ -89,7 +90,7 @@ Findings documented as formal security reports.
 
 - ✅ Core platform deployed and operational on bare metal
 - ✅ 168 custom rules + 51 decoders, validated and active
-- ✅ 17 integrations fully documented
+- ✅ 18 integrations fully documented
 - 🚧 Documentation rolling out for additional lab components (Shuffle, MISP, SpiderFoot, DFIR-IRIS, GRR, Conpot, Nuclei)
 - 🚧 GNN ML prototype — Wazuh native integration pending
 

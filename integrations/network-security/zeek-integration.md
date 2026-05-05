@@ -1,4 +1,4 @@
-### Complete Installation Guide for Zeek v7.2.2 on Ubuntu 24.04 LTS
+### Complete Installation Guide for Zeek v8.1.2 on Ubuntu 24.04 LTS
 
 ## Objective
 
@@ -62,7 +62,7 @@ sudo apt install -y zeek
 Expected result:
 
 ```
-/opt/zeek/bin/zeek version 7.2.2
+/opt/zeek/bin/zeek version 8.1.2
 ```
 
 ---
@@ -379,7 +379,7 @@ Check:
 
 set -e
 
-echo "=== Installing Zeek v7.2.2 ==="
+echo "=== Installing Zeek v8.1.2 ==="
 
 # Check Ubuntu version
 if ! grep -q "Ubuntu 24.04" /etc/os-release; then
@@ -435,7 +435,7 @@ chmod +x zeek-install.sh
 
 - [ ] Ubuntu 24.04 system updated  
 - [ ] Zeek repository added  
-- [ ] Zeek v7.2.2 installed  
+- [ ] Zeek v8.1.2 installed  
 - [ ] `/opt/zeek/etc/networks.cfg` configured  
 - [ ] `/opt/zeek/etc/node.cfg` configured  
 - [ ] ZeekControl executed with sudo  

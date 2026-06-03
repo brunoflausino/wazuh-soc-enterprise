@@ -392,7 +392,7 @@ Five panels were created to cover all operational aspects of the GNN detection p
 
 ## GitHub Publication State
 
-At the end of the validation handoff, the five dashboard screenshots had already been committed and pushed in the repository under `integrations/ml-research/assets/gnn-security-detector/`. The remaining publication task is to add this Markdown document to `integrations/ml-research/gnn-security-detector-integration.md` and commit it.
+At the end of the validation workflow, the five dashboard screenshots and this Markdown document were committed and pushed to the repository. The final published integration lives under `integrations/ml-research/`, with dashboard evidence stored in `integrations/ml-research/assets/gnn-security-detector/`.
 
 ---
 

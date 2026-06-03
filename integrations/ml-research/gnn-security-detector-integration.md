@@ -1,7 +1,7 @@
 # GNN Security Detector — Wazuh Integration
 
 **Integration #19 — ML-based Anomaly Detection**  
-**Status:** Validated (Lab / Portfolio)  
+**Status:** Validated and publication-ready (Lab / Portfolio)  
 **Rule IDs:** 100630–100640, 100650  
 **Wazuh Version:** 4.14.x  
 **Host:** Ubuntu 24.04 LTS (bare-metal)  
@@ -390,19 +390,25 @@ Five panels were created to cover all operational aspects of the GNN detection p
 
 ---
 
+## GitHub Publication State
+
+At the end of the validation handoff, the five dashboard screenshots had already been committed and pushed in the repository under `integrations/ml-research/assets/gnn-security-detector/`. The remaining publication task is to add this Markdown document to `integrations/ml-research/gnn-security-detector-integration.md` and commit it.
+
+---
+
 ## Known Limitations
 
 - `data.gnn_score` is indexed as a string type. Suitable for display; not usable for numeric aggregations without a runtime field mapping correction.
 - Rule 100650 `frequency` and `timeframe` values should be verified against the actual production `local_rules.xml` before publishing as authoritative.
 - The GNN model itself is a prototype. Detection accuracy against real malicious traffic has not been evaluated.
-- No GitHub publication of screenshots was completed in the validation session. Screenshots remain locally at `/home/brunoflausino/wazuh-backup-complete/GNN-dashboard/`.
+- Dashboard screenshots were committed to the repository under `integrations/ml-research/assets/gnn-security-detector/`. Local backup copies remain preserved at `/home/brunoflausino/wazuh-backup-complete/GNN-dashboard/`.
 - This is a controlled synthetic test, not a production model evaluation.
 
 ---
 
-## Recommended Next Evidence Files
+## Optional Future Evidence Files
 
-Before a full production GitHub commit, the following files should be captured and included:
+The current GitHub publication can be completed with the Markdown document and the five dashboard screenshots. For stronger future auditability, the following evidence files can also be captured later:
 
 ```
 integrations/ml-research/
@@ -436,7 +442,7 @@ integrations/ml-research/
 | Validated alerts (clean run) | 320 |
 | Dashboard panels | 5 |
 | Index pattern | `wazuh-alerts-*` |
-| GitHub status | Pending — screenshots local only |
+| GitHub status | Publication-ready — Markdown plus dashboard screenshots under `integrations/ml-research/` |
 
 ---
 

@@ -5,7 +5,7 @@
 [![Rules](https://img.shields.io/badge/Custom%20Rules-168-success)](./integrations)
 [![Decoders](https://img.shields.io/badge/Custom%20Decoders-51-success)](./integrations)
 [![Documented Integrations](https://img.shields.io/badge/Documented%20Integrations-18-green)](./integrations)
-[![GNN](https://img.shields.io/badge/GNN-Validated%20Prototype-purple)](./integrations/ml-research)
+[![ML Research](https://img.shields.io/badge/ML%20Research-Honest%20Benchmark-purple)](./integrations/ml-research)
 [![Status](https://img.shields.io/badge/Status-Active%20Development-yellow)](./integrations)
 
 ## Overview
@@ -67,27 +67,40 @@ Deployed in the lab; integration guides being added:
 
 Local LLM runtime deployed via Docker (`wazuh-ollama`) for on-prem experimentation with LLM-assisted log triage and alert summarisation. No security data leaves the lab.
 
-### GNN Anomaly Detection Prototype
+### GNN vs Gradient Boosting — Honest Benchmark on Real Suricata Flows (T1046)
 
-**Status**: Documented + Productionization roadmap active
+**Status:** Benchmark complete · negative result, rigorously documented.
 
-Custom Python anomaly detector (~1,200 lines) using **PyTorch + torch_geometric** (GCNConv / SAGEConv / GATConv) with **networkx** graph construction and **IsolationForest** hybrid scoring. Ingests host/IP/process graphs from Wazuh OpenSearch.
+End-to-end edge-classification pipeline to test whether Graph Neural Networks (GNNs) beat gradient boosting at detecting **Nmap SYN scans** (MITRE ATT&CK T1046), on **~2 million real Suricata flows** collected over 57 days in this lab.
 
-**Targets:**
-- Scanners (T1046, T1595)
-- C2 communication (T1071, T1102)
-- High-volume / DDoS traffic (T1498)
-- Lateral movement (T1570)
+**Pre-registered hypothesis** — that GNNs should win because scan-vs-benign is determined by a source's *neighborhood* (fan-out to many destinations) and not by any individual flow — **was not supported**:
 
-**Already delivered:**
-- Validated pipeline in lab (320+ alerts indexed)
-- Chain of 8 custom Wazuh rules
-- 5 dashboard panels
-- Full technical documentation available
+| Best tabular (XGBoost) | Best GNN (E-GraphSAGE) | Δ PR-AUC |
+| :--------------------: | :--------------------: | :------: |
+| **PR-AUC 0.196 [0.15, 0.26]** | PR-AUC 0.093 [0.07, 0.13] | **−0.102** |
 
-📄 **[See full GNN documentation →](./integrations/ml-research/gnn-security-detector-integration.md)**
+**Why** — mean/attention aggregation in E-GraphSAGE / GATv2 mathematically cannot encode node degree (the GIN argument; Xu et al., 2019). Even with the GNN's structural advantage (transductive message passing over the full graph, including test-time edges), per-flow edge features already saturate the SYN-scan signature for XGBoost. A degree-stripping ablation also showed train-window node profiles do *not* transfer across a temporal split.
 
-> **Next**: Native Wazuh integration (rule emission + indexed events) + public Kaggle notebook in progress.
+What the work documents:
+
+- Resilient ingestion of 8 rotated `eve.json` files (4.4 GB, ~2 M flows; 2 malformed lines skipped over the entire corpus)
+- **Community ID v1** flow keying to deduplicate across rotated logs (Suricata's `flow_id` is a reused memory address — OISF Redmine #1696)
+- Temporal 70 / 15 / 15 split; all scalers and node features fit on TRAIN only
+- Imbalance-aware metrics — **PR-AUC, MCC, Balanced Accuracy, TPR@FPR=1%** — with 1,000-resample bootstrap 95% CIs
+- Two model families (E-GraphSAGE via custom `MessagePassing`, GATv2 with `edge_dim`) over five seeds with ensembled probabilities
+- Honest discussion of limitations, expected follow-ups, and a model card (Mitchell et al., 2019) for the winning model
+
+📄 **[Full report → integrations/ml-research/gnn-vs-tabular-scan-detection.md](./integrations/ml-research/gnn-vs-tabular-scan-detection.md)**
+
+### GNN → Wazuh Ingestion Framework (rules 100630–100650)
+
+A separate, working artifact: a Wazuh rule chain and OpenSearch dashboard scaffold that parse, classify and alert on GNN anomaly events written as JSON to `localfile`. The plumbing is real and `wazuh-analysisd -t` / `wazuh-logtest` validated; it is now waiting on a model that beats the tabular baseline above.
+
+📄 **[Ingestion framework → integrations/ml-research/gnn-security-detector-integration.md](./integrations/ml-research/gnn-security-detector-integration.md)**
+
+### Note on resources
+
+This is a **self-funded, single-workstation lab** (Ubuntu 24.04, Intel i9, 32 GB RAM, RTX 4070 SUPER 12 GB, one Suricata sensor). Cross-environment validation, large-scale GIN / sum-aggregation training, multi-vendor dataset replication and longer time horizons are out of reach for a one-person setup. Collaborations, dataset access and feedback are very welcome.
 
 ---
 
@@ -114,9 +127,9 @@ Findings documented as formal security reports.
 - ✅ Core platform deployed and operational on bare metal
 - ✅ 168 custom rules + 51 decoders, validated and active
 - ✅ 18 integrations fully documented
-- ✅ **GNN Anomaly Detection** — documented with validated pipeline
+- ✅ **GNN-vs-tabular benchmark on real Suricata flows** — complete, honestly documented
+- ✅ **GNN → Wazuh ingestion framework** (rules `100630–100650`) — operational, model-agnostic, awaiting a model that beats the tabular baseline
 - 🚧 Documentation rolling out for additional lab components (Shuffle, MISP, SpiderFoot, DFIR-IRIS, GRR, Conpot, Nuclei)
-- 🚀 GNN productionization roadmap active (see `integrations/ml-research/`)
 
 ---
 

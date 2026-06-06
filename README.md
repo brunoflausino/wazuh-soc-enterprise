@@ -4,7 +4,7 @@
 [![Wazuh](https://img.shields.io/badge/Wazuh-4.14.5-blue)](https://wazuh.com)
 [![Rules](https://img.shields.io/badge/Custom%20Rules-168-success)](./integrations)
 [![Decoders](https://img.shields.io/badge/Custom%20Decoders-51-success)](./integrations)
-[![Documented Integrations](https://img.shields.io/badge/Documented%20Integrations-18-green)](./integrations)
+[![Documented Integrations](https://img.shields.io/badge/Documented%20Integrations-19-green)](./integrations)
 [![ML Research](https://img.shields.io/badge/ML%20Research-Honest%20Benchmark-purple)](./integrations/ml-research)
 [![Status](https://img.shields.io/badge/Status-Active%20Development-yellow)](./integrations)
 
@@ -32,13 +32,13 @@ End-to-end validation pipeline: `wazuh-logtest` → `wazuh-analysisd -t` → Ope
 
 ---
 
-## 📊 Integrated Security Stack — 18 Documented
+## 📊 Integrated Security Stack — 19 Documented
 
 | Category | Tools | Documentation |
 | --- | --- | --- |
 | **Core SIEM** | Wazuh Manager, Indexer, Dashboard, Filebeat | ✅ Operational |
 | **Network Security** | Suricata, Zeek NSM, WireGuard, UFW | ✅ Documented |
-| **Threat Intelligence & Detection** | CALDERA, YARA Forge, Falco (eBPF), Cowrie, Auditd | ✅ Documented |
+| **Threat Intelligence & Detection** | CALDERA, YARA Forge, Falco (eBPF), Cowrie, Auditd, MISP | ✅ Documented |
 | **Incident Response** | Velociraptor | ✅ Documented |
 | **System Inventory** | OSQuery | ✅ Documented |
 | **Authentication** | FreeRADIUS, Radsecproxy | ✅ Documented |
@@ -54,7 +54,7 @@ End-to-end validation pipeline: `wazuh-logtest` → `wazuh-analysisd -t` → Ope
 Deployed in the lab; integration guides being added:
 
 - **SOAR & Orchestration**: Shuffle (Docker stack)
-- **Threat Intel Platforms**: MISP, SpiderFoot
+- **Threat Intel Platforms**: SpiderFoot
 - **DFIR**: GRR Rapid Response, DFIR-IRIS
 - **ICS/SCADA Honeypot**: Conpot
 - **Vulnerability scanner**: Nuclei
@@ -126,10 +126,10 @@ Findings documented as formal security reports.
 
 - ✅ Core platform deployed and operational on bare metal
 - ✅ 168 custom rules + 51 decoders, validated and active
-- ✅ 18 integrations fully documented
+- ✅ **19 integrations fully documented**
 - ✅ **GNN-vs-tabular benchmark on real Suricata flows** — complete, honestly documented
 - ✅ **GNN → Wazuh ingestion framework** (rules `100630–100650`) — operational, model-agnostic, awaiting a model that beats the tabular baseline
-- 🚧 Documentation rolling out for additional lab components (Shuffle, MISP, SpiderFoot, DFIR-IRIS, GRR, Conpot, Nuclei)
+- 🚧 Documentation rolling out for additional lab components (Shuffle, SpiderFoot, DFIR-IRIS, GRR, Conpot, Nuclei)
 
 ---
 

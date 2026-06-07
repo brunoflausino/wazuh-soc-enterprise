@@ -2,9 +2,9 @@
 
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20LTS-orange)](https://ubuntu.com)
 [![Wazuh](https://img.shields.io/badge/Wazuh-4.14.5-blue)](https://wazuh.com)
-[![Rules](https://img.shields.io/badge/Custom%20Rules-168-success)](./integrations)
+[![Rules](https://img.shields.io/badge/Custom%20Rules-178-success)](./integrations)
 [![Decoders](https://img.shields.io/badge/Custom%20Decoders-51-success)](./integrations)
-[![Documented Integrations](https://img.shields.io/badge/Documented%20Integrations-19-green)](./integrations)
+[![Documented Integrations](https://img.shields.io/badge/Documented%20Integrations-20-green)](./integrations)
 [![ML Research](https://img.shields.io/badge/ML%20Research-Honest%20Benchmark-purple)](./integrations/ml-research)
 [![Status](https://img.shields.io/badge/Status-Active%20Development-yellow)](./integrations)
 
@@ -22,9 +22,9 @@ Maintained by [Bruno Flausino](https://www.linkedin.com/in/brflausino/) — SOC 
 
 | Metric | Value |
 | --- | --- |
-| Custom rules authored | **168** |
+| Custom rules authored | **178** (across 13 active files in `/var/ossec/etc/rules/`) |
 | Custom decoders authored | **51** |
-| Rule ID range | `100000 – 120064` |
+| Rule ID range | `100049 – 120064` |
 | Wazuh version | `4.14.5` |
 | MITRE ATT&CK techniques referenced (active rules) | T1021, T1046, T1055, T1059, T1070, T1070.006, T1078, T1082, T1083, T1105, T1110, T1110.001, T1119, T1136, T1499, T1543, T1548.001, T1562 |
 
@@ -32,14 +32,16 @@ End-to-end validation pipeline: `wazuh-logtest` → `wazuh-analysisd -t` → Ope
 
 ---
 
-## 📊 Integrated Security Stack — 19 Documented
+## 📊 Integrated Security Stack — 20 Documented
+
+Every tool below ships its own markdown guide with configuration, validated `wazuh-logtest` output, and dashboard screenshots. This table lists **only** what is actually deployed **and** documented.
 
 | Category | Tools | Documentation |
 | --- | --- | --- |
 | **Core SIEM** | Wazuh Manager, Indexer, Dashboard, Filebeat | ✅ Operational |
 | **Network Security** | Suricata, Zeek NSM, WireGuard, UFW | ✅ Documented |
-| **Threat Intelligence & Detection** | CALDERA, YARA Forge, Falco (eBPF), Cowrie, Auditd, MISP | ✅ Documented |
-| **Incident Response** | Velociraptor | ✅ Documented |
+| **Threat Intelligence & Detection** | MISP, CALDERA, YARA, Falco (eBPF), Cowrie, Auditd | ✅ Documented |
+| **Incident Response & SOAR** | Velociraptor, Shuffle SOAR | ✅ Documented |
 | **System Inventory** | OSQuery | ✅ Documented |
 | **Authentication** | FreeRADIUS, Radsecproxy | ✅ Documented |
 | **Vulnerability Management** | OpenVAS / GVM | ✅ Documented |
@@ -49,15 +51,17 @@ End-to-end validation pipeline: `wazuh-logtest` → `wazuh-analysisd -t` → Ope
 
 ---
 
-## 🛠️ Additional Lab Components — documentation in progress
+## 🗺️ Roadmap — not part of the documented count above
 
-Deployed in the lab; integration guides being added:
+Listed separately and honestly so the table above stays trustworthy. Verified against the live `/var/ossec/etc/rules/` and `ossec.conf` on 2026-06-07.
 
-- **SOAR & Orchestration**: Shuffle (Docker stack)
-- **Threat Intel Platforms**: SpiderFoot
-- **DFIR**: GRR Rapid Response, DFIR-IRIS
-- **ICS/SCADA Honeypot**: Conpot
-- **Vulnerability scanner**: Nuclei
+**Wazuh-side integration deployed, public guide pending:**
+- **GRR Rapid Response** — rules `120000–120003` in `local_rules_json.xml`; localfile `/var/log/grr/hunt-events.json` configured. Awaiting a written guide.
+- **Nuclei** — `nuclei_rules.xml` (6 rules); localfile `/opt/nuclei-scans/logs/nuclei.jsonl` configured. Awaiting a written guide.
+- **Auditd MITRE pack** — `110700-auditd-mitre.xml` (22 rules) ships alongside the existing Auditd guide and could be promoted to its own section.
+- **CAPE Sandbox** — rule `120050` in `local_rules_json.xml`; localfile `/var/log/cape/events.log` configured. Awaiting a guide.
+- **DFIR-IRIS** — inbound rule `120040` defined; outbound `custom-wazuh_iris.py` integration block is **currently commented out** in `ossec.conf`. Decide whether to re-enable then document.
+- **OpenCanary** — localfile `/var/tmp/opencanary.log` configured; no custom rules. Decide whether to add rules + a guide or remove the localfile.
 
 ---
 
@@ -92,11 +96,25 @@ What the work documents:
 
 📄 **[Full report → integrations/ml-research/gnn-vs-tabular-scan-detection.md](./integrations/ml-research/gnn-vs-tabular-scan-detection.md)**
 
-### GNN → Wazuh Ingestion Framework (rules 100630–100650)
+### GNN → Wazuh Ingestion — deployed at Wazuh layer
 
-A separate, working artifact: a Wazuh rule chain and OpenSearch dashboard scaffold that parse, classify and alert on GNN anomaly events written as JSON to `localfile`. The plumbing is real and `wazuh-analysisd -t` / `wazuh-logtest` validated; it is now waiting on a model that beats the tabular baseline above.
+A Wazuh rule chain and dashboard scaffold ingest GNN-style anomaly events from `/var/log/gnn-security/alerts.json` (configured as a `localfile` in `ossec.conf`). The 8-rule chain is live in `/var/ossec/etc/rules/gnn_rules.xml`:
 
-📄 **[Ingestion framework → integrations/ml-research/gnn-security-detector-integration.md](./integrations/ml-research/gnn-security-detector-integration.md)**
+| Rule | Level | Detection type | MITRE |
+|---|---|---|---|
+| `100630` | 0 | base (no-alert) | — |
+| `100631` | 10 | potential network scanner | T1046, T1595 |
+| `100632` | 12 | potential C2 server | T1071, T1102, T1573 |
+| `100633` | 11 | high-severity source IP | T1059 |
+| `100634` | 9 | high-volume anomalous traffic | T1498 |
+| `100635` | 8 | suspicious communication pattern | T1570 |
+| `100640` | 14 | severe anomaly (gnn_score ≤ −0.7) | T1570, T1021 |
+| `100650` | 13 | repeated anomalies, same src_ip in 1h | T1595 |
+
+**What is deployed:** the Wazuh-side ingestion, classification and alerting path. Rule chain validated with `wazuh-analysisd -t`.
+**What is not yet productionised:** the GNN detector itself runs as ad-hoc development code (outside this repo), not as a persistent service writing to the watched file. The benchmark above showed the underlying model has not yet beaten the tabular baseline, so promoting the detector to a service is paused pending model work.
+
+📄 **[Rule-chain details → integrations/ml-research/gnn-security-detector-integration.md](./integrations/ml-research/gnn-security-detector-integration.md)**
 
 ### Note on resources
 
@@ -125,11 +143,12 @@ Findings documented as formal security reports.
 ## 📈 Project Status
 
 - ✅ Core platform deployed and operational on bare metal
-- ✅ 168 custom rules + 51 decoders, validated and active
-- ✅ **19 integrations fully documented**
+- ✅ **178 custom rules + 51 decoders**, validated and active across 13 rule files
+- ✅ **20 integrations fully documented** (incl. Shuffle SOAR)
 - ✅ **GNN-vs-tabular benchmark on real Suricata flows** — complete, honestly documented
-- ✅ **GNN → Wazuh ingestion framework** (rules `100630–100650`) — operational, model-agnostic, awaiting a model that beats the tabular baseline
-- 🚧 Documentation rolling out for additional lab components (Shuffle, SpiderFoot, DFIR-IRIS, GRR, Conpot, Nuclei)
+- ✅ **GNN → Wazuh ingestion** deployed at the Wazuh layer (rules `100630–100650`); detector itself remains dev-only, awaiting a model that beats the tabular baseline
+- ✅ Active Response live for `firewall-drop` (rule `5763`) and `yara_linux` (rules `100301/100302`)
+- 🚧 Guides pending for several Wazuh-side-deployed integrations: **GRR**, **Nuclei**, **CAPE**, **DFIR-IRIS** (inbound), **OpenCanary**, and the **Auditd-MITRE** rule pack
 
 ---
 

@@ -1,46 +1,64 @@
 # Wazuh SOC Integration Catalog
 
-## Complete Integration Index
+Each integration below has a dedicated markdown guide with configuration, validated `wazuh-logtest` / `wazuh-analysisd -t` output, OpenSearch DevTools queries, and dashboard screenshots. This index lists **only** integrations that are deployed **and** documented.
 
-### 🔒 [Network Security](network-security/)
-- Suricata IDS/IPS
-- Zeek Network Monitor
-- WireGuard VPN
-- UFW Firewall
+## Documented Integrations (20)
 
-### 🎯 [Threat Intelligence](threat-intelligence/)
-- MITRE CALDERA
-- SpiderFoot OSINT
-- Conpot Honeypot
+### 🔒 [Network Security](network-security/) — 4
+- [Suricata IDS/IPS](network-security/suricata-integration.md)
+- [Zeek Network Monitor](network-security/zeek-integration.md)
+- [WireGuard VPN](network-security/wireguard-integration.md)
+- [UFW Firewall](network-security/ufw-integration.md)
 
-### 🚨 [Incident Response](incident-response/)
-- DFIR-IRIS Case Management
-- GRR Rapid Response
-- Shuffle SOAR Platform
+### 🎯 [Threat Intelligence & Detection](threat-intelligence/) — 6
+- [MISP Threat Intelligence](threat-intelligence/misp-integration.md)
+- [MITRE CALDERA](threat-intelligence/caldera-integration.md)
+- [YARA](threat-intelligence/yara-integration.md)
+- [Falco (eBPF)](threat-intelligence/falco-integration.md)
+- [Cowrie Honeypot](threat-intelligence/cowrie-integration.md)
+- [Auditd](threat-intelligence/auditd-integration.md)
 
-### 🔐 [Authentication](authentication/)
-- FreeRADIUS
-- Radsecproxy
+### 🚨 [Incident Response & SOAR](incident-response/) — 2
+- [Velociraptor DFIR](incident-response/velociraptor-integration.md)
+- [Shuffle SOAR](incident-response/shuffle-integration.md)
 
-### 💾 [Data Protection](data-protection/)
-- ClamAV Antivirus
-- VeraCrypt Encryption
-- NWIPE Secure Erasure
-- Restic Backup
+### 🖥️ [System Inventory](system-inventory/) — 1
+- [OSQuery](system-inventory/osquery-integration.md)
+
+### 🔓 [Vulnerability Management](vulnerability-scan/) — 1
+- [OpenVAS / GVM](vulnerability-scan/openvas-integration.md)
+
+### 🔐 [Authentication](authentication/) — 2
+- [FreeRADIUS](authentication/freeradius-integration.md)
+- [Radsecproxy](authentication/radsecproxy-integration.md)
+
+### 💾 [Data Protection](data-protection/) — 4
+- [ClamAV Antivirus](data-protection/clamav-integration.md)
+- [VeraCrypt Encryption](data-protection/veracrypt-integration.md)
+- [NWIPE Secure Erasure](data-protection/nwipe-integration.md)
+- [Restic Backup](data-protection/restic-integration.md)
+
+### 🧪 [ML Research](ml-research/)
+- [GNN vs Gradient Boosting — honest benchmark on real Suricata flows](ml-research/gnn-vs-tabular-scan-detection.md) *(complete; negative result)*
+- [GNN → Wazuh ingestion scaffold](ml-research/gnn-security-detector-integration.md) *(prototype; synthetic events only — detector not integrated end-to-end)*
 
 ---
 
 ## Integration Status
 
-| Category | Tools | Documentation |
-|----------|-------|---------------|
-| Network Security | 4 | 🚧 In Progress |
-| Threat Intelligence | 3 | 🚧 In Progress |
-| Incident Response | 3 | 🚧 In Progress |
-| Authentication | 2 | 🚧 In Progress |
-| Data Protection | 4 | 🚧 In Progress |
-| **TOTAL** | **16** | **0% Complete** |
+| Category | Documented tools | Status |
+|----------|:----------------:|--------|
+| Network Security | 4 | ✅ Complete |
+| Threat Intelligence & Detection | 6 | ✅ Complete |
+| Incident Response & SOAR | 2 | ✅ Complete |
+| System Inventory | 1 | ✅ Complete |
+| Vulnerability Management | 1 | ✅ Complete |
+| Authentication | 2 | ✅ Complete |
+| Data Protection | 4 | ✅ Complete |
+| **TOTAL** | **20** | **Documented & validated** |
 
 ---
 
-*Documentation is being actively developed. Check back regularly for updates.*
+## Roadmap (not counted above)
+
+**Wazuh-side integration deployed, guide pending:** GRR Rapid Response (rules `120000–120003`), Nuclei (`nuclei_rules.xml`), CAPE Sandbox (rule `120050`), DFIR-IRIS (inbound rule `120040`; outbound currently commented out), OpenCanary (localfile only), and the Auditd-MITRE rule pack (`110700-auditd-mitre.xml`).

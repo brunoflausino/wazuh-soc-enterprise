@@ -206,3 +206,6 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 scripts/spiderfoot/backup/
+
+# Cowrie update backups (local only)
+integrations/threat-intelligence/.backup_cowrie_*

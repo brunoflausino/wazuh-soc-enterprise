@@ -1,23 +1,28 @@
-# Cowrie Honeypot - Integrations
+# Threat Intelligence & Detection - Integrations
 
-This directory documents the Cowrie SSH/Telnet honeypot integration with Wazuh SIEM for the Wazuh SOC Enterprise lab.
+This directory documents threat intelligence and detection integrations with Wazuh SIEM for the Wazuh SOC Enterprise lab.
 
 ---
 
-## Integration
+## Integrations
 
 | Integration | Version | Status | Rules | Document |
 | --- | --- | --- | --- | --- |
-| [Cowrie](cowrie-integration.md) | Docker image `cowrie/cowrie:latest` | Complete | 100500-100508 | [cowrie-integration.md](cowrie-integration.md) |
+| [Auditd](auditd-integration.md) | System auditd | Complete | 110700-110721 | [auditd-integration.md](auditd-integration.md) |
+| [MITRE Caldera](caldera-integration.md) | Caldera | Complete | — | [caldera-integration.md](caldera-integration.md) |
+| [Cowrie](cowrie-integration.md) | Docker `cowrie/cowrie:latest` | Complete | 100500-100508 | [cowrie-integration.md](cowrie-integration.md) |
+| [Falco](falco-integration.md) | Falco 0.43.0 (Modern eBPF) | Complete | 100600-100607 | [falco-integration.md](falco-integration.md) |
+| [MISP](misp-integration.md) | Docker (ports 8080/8445) | Complete | 100700-100701, 120030 | [misp-integration.md](misp-integration.md) |
+| [YARA](yara-integration.md) | YARA + Active Response | Complete | 100300-100302 | [yara-integration.md](yara-integration.md) |
 
 ---
 
-## Architecture Overview
+## Cowrie Honeypot - Architecture Overview
 
 ```text
 [Attacker / SSH or Telnet client]
           |
-          | TCP 2224 (SSH) / 2225 (Telnet)
+          | TCP 55222 (SSH) / 55223 (Telnet)
           v
  [Cowrie container - Docker]
           |
@@ -36,12 +41,12 @@ This directory documents the Cowrie SSH/Telnet honeypot integration with Wazuh S
  [OpenSearch Indexer]
           |
           v
- [Wazuh Dashboard]
+ [Wazuh Dashboard - 10 panels]
 ```
 
 ---
 
-## Rule Reference
+## Cowrie Rule Reference
 
 | Rule ID | Level | Description | MITRE |
 | --- | ---: | --- | --- |
@@ -57,29 +62,22 @@ This directory documents the Cowrie SSH/Telnet honeypot integration with Wazuh S
 
 ---
 
-## Expected Assets
+## Cowrie Dashboard Screenshots
 
 Store screenshots inside `assets/cowrie/`.
 
-### Core screenshots
-
-| File | Purpose |
-| --- | --- |
-| `cowrie-activity-timeline.png` | Line chart - Honeypot activity timeline |
-| `cowrie-event-distribution.png` | Pie / donut - Event distribution by `data.eventid` |
-| `cowrie-alert-severity-distribution.png` | Vertical bar - Alert severity distribution |
-| `cowrie-usernames-attacked.png` | Pie - Attacked usernames |
-| `cowrie-mitre-techniques.png` | Pie - MITRE ATT&CK techniques |
-| `cowrie-alerts-by-rule.png` | Horizontal bar - Alerts by rule |
-| `cowrie-mitre-tactics.png` | Horizontal bar - MITRE ATT&CK tactics |
-| `cowrie-alert-details.png` | Data table - Recent alert details |
-
-### Supporting screenshots
-
-| File | Purpose |
-| --- | --- |
-| `cowrie-dashboard-full.png` | Full dashboard view |
-| `cowrie-devtools-verification.png` | Dev Tools query / aggregation verification |
+| File | Panel | Purpose |
+| --- | ---: | --- |
+| `01-cowrie-alert-volume-timeline-bar.png` | 1 | Vertical bar - Alert volume over time |
+| `02-cowrie-honeypot-event-types.png` | 2 | Donut - Event distribution by `data.eventid` |
+| `03-cowrie-malware-download-attempts-by-tool.png` | 3 | Horizontal bar - Malware download commands (T1105) |
+| `04-cowrie-alerts-by-rule-id.png` | 4 | Horizontal bar - Alerts by rule ID |
+| `05-cowrie-alert-severity-levels-by-rule.png` | 5 | Vertical bar - Alert severity distribution |
+| `06-cowrie-top-source-ips.png` | 6 | Horizontal bar - Top attacker IPs |
+| `07-cowrie-top-commands-executed.png` | 7 | Horizontal bar - Top shell commands |
+| `08-cowrie-authentication-outcomes.png` | 8 | Donut - Failed vs successful logins |
+| `09-cowrie-mitre-attack-techniques-by-rule.png` | 9 | Donut - MITRE technique distribution |
+| `10-cowrie-recent-alert-details-discover.png` | 10 | Discover saved search - Tabular alert details |
 
 ---
 
@@ -89,7 +87,8 @@ Store screenshots inside `assets/cowrie/`.
 - The integration uses the built-in `json` decoder with `<decoded_as>json</decoded_as>` in rules.
 - To keep JSON dynamic fields (`data.eventid`, `data.username`, `data.src_ip`, etc.) available in `alerts.json` and OpenSearch, do **not** use child decoders that inherit from `<parent>json</parent>`.
 - Because `wazuh-logtest` is unreliable for JSON field testing in this workflow, the Cowrie rules use `<match>` against the raw JSON string instead of `<field>` conditions.
+- Port 55222 (SSH) and 55223 (Telnet) are used because the host public port 22 is allocated to MITRE Caldera.
 
 ---
 
-*Prepared for the Wazuh SOC Enterprise repository - Cowrie honeypot integration pack.*
+*Prepared for the Wazuh SOC Enterprise repository — Threat Intelligence & Detection integration pack.*

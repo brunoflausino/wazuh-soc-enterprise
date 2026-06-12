@@ -2,9 +2,9 @@
 
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20LTS-orange)](https://ubuntu.com)
 [![Wazuh](https://img.shields.io/badge/Wazuh-4.14.5-blue)](https://wazuh.com)
-[![Rules](https://img.shields.io/badge/Custom%20Rules-178-success)](./integrations)
+[![Rules](https://img.shields.io/badge/Custom%20Rules-182-success)](./integrations)
 [![Decoders](https://img.shields.io/badge/Custom%20Decoders-51-success)](./integrations)
-[![Documented Integrations](https://img.shields.io/badge/Documented%20Integrations-20-green)](./integrations)
+[![Documented Integrations](https://img.shields.io/badge/Documented%20Integrations-21-green)](./integrations)
 [![ML Research](https://img.shields.io/badge/ML%20Research-Honest%20Benchmark-purple)](./integrations/ml-research)
 [![Status](https://img.shields.io/badge/Status-Active%20Development-yellow)](./integrations)
 
@@ -22,17 +22,17 @@ Maintained by [Bruno Flausino](https://www.linkedin.com/in/brflausino/) — SOC 
 
 | Metric | Value |
 | --- | --- |
-| Custom rules authored | **178** (across 13 active files in `/var/ossec/etc/rules/`) |
+| Custom rules authored | **182** (across 13 active files in `/var/ossec/etc/rules/`) |
 | Custom decoders authored | **51** |
 | Rule ID range | `100049 – 120064` |
 | Wazuh version | `4.14.5` |
-| MITRE ATT&CK techniques referenced (active rules) | T1021, T1046, T1055, T1059, T1070, T1070.006, T1078, T1082, T1083, T1105, T1110, T1110.001, T1119, T1136, T1499, T1543, T1548.001, T1562 |
+| MITRE ATT&CK techniques referenced (active rules) | T1021, T1046, T1055, T1059, T1070, T1070.006, T1071, T1078, T1082, T1083, T1105, T1110, T1110.001, T1119, T1136, T1499, T1543, T1548.001, T1562, T1595 |
 
 End-to-end validation pipeline: `wazuh-logtest` → `wazuh-analysisd -t` → OpenSearch DevTools, before any rule reaches production. Disciplined change management: timestamped backups, TimeShift snapshots. English-language documentation for every integration.
 
 ---
 
-## 📊 Integrated Security Stack — 20 Documented
+## 📊 Integrated Security Stack — 21 Documented
 
 Every tool below ships its own markdown guide with configuration, validated `wazuh-logtest` output, and dashboard screenshots. This table lists **only** what is actually deployed **and** documented.
 
@@ -40,7 +40,7 @@ Every tool below ships its own markdown guide with configuration, validated `waz
 | --- | --- | --- |
 | **Core SIEM** | Wazuh Manager, Indexer, Dashboard, Filebeat | ✅ Operational |
 | **Network Security** | Suricata, Zeek NSM, WireGuard, UFW | ✅ Documented |
-| **Threat Intelligence & Detection** | MISP, CALDERA, YARA, Falco (eBPF), Cowrie, Auditd | ✅ Documented |
+| **Threat Intelligence & Detection** | MISP, OSINT CDB (AlienVault/FireHOL), CALDERA, YARA, Falco (eBPF), Cowrie, Auditd | ✅ Documented |
 | **Incident Response & SOAR** | Velociraptor, Shuffle SOAR | ✅ Documented |
 | **System Inventory** | OSQuery | ✅ Documented |
 | **Authentication** | FreeRADIUS, Radsecproxy | ✅ Documented |
@@ -53,7 +53,7 @@ Every tool below ships its own markdown guide with configuration, validated `waz
 
 ## 🗺️ Roadmap — not part of the documented count above
 
-Listed separately and honestly so the table above stays trustworthy. Verified against the live `/var/ossec/etc/rules/` and `ossec.conf` on 2026-06-07.
+Listed separately and honestly so the table above stays trustworthy. Verified against the live `/var/ossec/etc/rules/` and `ossec.conf` on 2026-06-12.
 
 **Wazuh-side integration deployed, public guide pending:**
 - **GRR Rapid Response** — rules `120000–120003` in `local_rules_json.xml`; localfile `/var/log/grr/hunt-events.json` configured. Awaiting a written guide.
@@ -143,8 +143,9 @@ Findings documented as formal security reports.
 ## 📈 Project Status
 
 - ✅ Core platform deployed and operational on bare metal
-- ✅ **178 custom rules + 51 decoders**, validated and active across 13 rule files
-- ✅ **20 integrations fully documented** (incl. Shuffle SOAR)
+- ✅ **182 custom rules + 51 decoders**, validated and active across 13 rule files
+- ✅ **21 integrations fully documented** (incl. Shuffle SOAR and the new native OSINT CDB)
+- ✅ **OSINT CDB threat intelligence** — native Wazuh CDB list (609 public IPv4 indicators from AlienVault via FireHOL), rules `113100–113103`, bidirectional `srcip`/`dstip` correlation, 6-panel OpenSearch dashboard, 58 indexed storm alerts with zero false positives on negative controls
 - ✅ **GNN-vs-tabular benchmark on real Suricata flows** — complete, honestly documented
 - ✅ **GNN → Wazuh ingestion** deployed at the Wazuh layer (rules `100630–100650`); detector itself remains dev-only, awaiting a model that beats the tabular baseline
 - ✅ Active Response live for `firewall-drop` (rule `5763`) and `yara_linux` (rules `100301/100302`)

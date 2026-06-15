@@ -1,0 +1,69 @@
+<!--
+  SpiderFoot OSINT → Wazuh detection rules
+  Rule range: 113200–113205
+  Decoder:    built-in JSON (do NOT attach a custom child decoder to
+              the json parent — see Wazuh bug #33798)
+  Deploy to:  /var/ossec/etc/rules/spiderfoot_rules.xml
+              owner/group root:wazuh, mode 0640
+-->
+<group name="spiderfoot,osint,reconnaissance,">
+
+  <rule id="113200" level="3">
+    <decoded_as>json</decoded_as>
+    <field name="integration">spiderfoot</field>
+    <description>SpiderFoot: normalized OSINT event ingested</description>
+    <group>spiderfoot,osint,reconnaissance,</group>
+  </rule>
+
+  <rule id="113201" level="10">
+    <if_sid>113200</if_sid>
+    <field name="event_type" type="pcre2">(?i)(credential|credentials|secret|token|password|leak|breach|exposed)</field>
+    <description>SpiderFoot: possible exposed credential or secret found</description>
+    <mitre>
+      <id>T1589.001</id>
+    </mitre>
+    <group>spiderfoot,osint,reconnaissance,credential_exposure,threat_intel,</group>
+  </rule>
+
+  <rule id="113202" level="6">
+    <if_sid>113200</if_sid>
+    <field name="event_type" type="pcre2">(?i)(email|identity|person|employee|username|account)</field>
+    <description>SpiderFoot: victim identity or email-related OSINT finding</description>
+    <mitre>
+      <id>T1589.002</id>
+    </mitre>
+    <group>spiderfoot,osint,reconnaissance,identity_exposure,</group>
+  </rule>
+
+  <rule id="113203" level="5">
+    <if_sid>113200</if_sid>
+    <field name="event_type" type="pcre2">(?i)(domain|dns|ip|netblock|asn|whois|certificate|cert|subdomain|infrastructure)</field>
+    <description>SpiderFoot: victim infrastructure OSINT finding</description>
+    <mitre>
+      <id>T1590</id>
+      <id>T1596</id>
+    </mitre>
+    <group>spiderfoot,osint,reconnaissance,infrastructure_intel,</group>
+  </rule>
+
+  <rule id="113204" level="7">
+    <if_sid>113200</if_sid>
+    <field name="event_type" type="pcre2">(?i)(open_technical_database|passive_dns|whois|certificate_transparency|scan_database|shodan|censys|crtsh)</field>
+    <description>SpiderFoot: open technical database reconnaissance finding</description>
+    <mitre>
+      <id>T1596</id>
+    </mitre>
+    <group>spiderfoot,osint,reconnaissance,open_technical_databases,</group>
+  </rule>
+
+  <rule id="113205" level="8">
+    <if_sid>113200</if_sid>
+    <field name="event_type" type="pcre2">(?i)(active_scan|port_scan|vulnerability_scan|direct_probe|active_recon)</field>
+    <description>SpiderFoot: active reconnaissance or probing module activity</description>
+    <mitre>
+      <id>T1595</id>
+    </mitre>
+    <group>spiderfoot,osint,reconnaissance,active_scanning,</group>
+  </rule>
+
+</group>

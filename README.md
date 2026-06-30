@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/wazuh-soc-pipeline.png" alt="Wazuh SOC — detection engineering pipeline" width="100%">
+</p>
+
 # 🛡️ Wazuh SOC Enterprise — Detection Engineering Lab
 
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20LTS-orange)](https://ubuntu.com)

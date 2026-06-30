@@ -213,3 +213,8 @@ integrations/threat-intelligence/.backup_cowrie_*
 # visual-kit tooling (kept local)
 apply_banners.py
 visual-kit-badges.md
+
+# editor / tooling noise
+*.bak
+*.bak.*
+.DS_Store

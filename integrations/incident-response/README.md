@@ -1,3 +1,6 @@
+<!-- soc-banner -->
+<p align="center"><img src="assets/banners/banner-incident-response.svg" alt="incident-response — Wazuh SOC" width="100%"></p>
+
 # Incident Response & Forensics Integrations
 
 SIEM-integrated DFIR tooling for the Wazuh SOC Enterprise project. Each integration pipelines endpoint and forensic tool logs into Wazuh for real-time alerting, MITRE ATT&CK-mapped detection, and dashboard visualization.

@@ -1,3 +1,6 @@
+<!-- soc-banner -->
+<p align="center"><img src="assets/banners/banner-authentication.svg" alt="authentication — Wazuh SOC" width="100%"></p>
+
 # Authentication — Integrations
 
 This directory covers RADIUS-based authentication monitoring integrations for the Wazuh SOC enterprise stack running on Ubuntu 24.04 LTS bare metal (Wazuh v4.14.4).

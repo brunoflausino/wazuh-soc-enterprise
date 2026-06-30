@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" font-family="'DejaVu Sans','Segoe UI',Arial,sans-serif">
+<defs><linearGradient id="band" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#5b21b6"/></linearGradient></defs>
+<rect x="2" y="2" width="1276" height="316" rx="20" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+<clipPath id="lc"><rect x="2" y="2" width="300" height="316" rx="20"/></clipPath>
+<g clip-path="url(#lc)"><rect x="2" y="2" width="320" height="316" fill="url(#band)"/></g>
+<g><circle cx="152.0" cy="124" r="46.0" fill="none" stroke="#fff" stroke-width="4.6"/><circle cx="152.0" cy="124" r="25.3" fill="none" stroke="#fff" stroke-width="3.7" opacity="0.7"/><line x1="94.5" y1="124" x2="209.5" y2="124" stroke="#fff" stroke-width="3.2"/><line x1="152.0" y1="66.5" x2="152.0" y2="181.5" stroke="#fff" stroke-width="3.2"/><circle cx="169.9" cy="106.1" r="7.4" fill="#fff"/></g>
+<text x="152.0" y="230" font-size="20" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="1">THREAT INTELLIGENCE</text>
+<text x="152.0" y="258" font-size="13" fill="#ffffff" opacity="0.8" text-anchor="middle" font-family="'DejaVu Sans Mono','Consolas',monospace">Wazuh SOC · detection eng.</text>
+<text x="346" y="74" font-size="15" fill="#94a3b8" font-family="'DejaVu Sans Mono','Consolas',monospace">integrations / threat-intelligence / spiderfoot</text>
+<text x="346" y="142" font-size="44" font-weight="800" fill="#0f172a">SpiderFoot</text>
+<text x="346" y="180" font-size="18" fill="#475569">OSINT reconnaissance pipeline</text>
+<rect x="346" y="194" width="64" height="4" rx="2" fill="#7c3aed"/>
+<rect x="346" y="216" width="205" height="34" rx="17" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.4"/>
+<circle cx="363" cy="233" r="4" fill="#7c3aed"/>
+<text x="376" y="238" font-size="14" fill="#475569" font-weight="600">Rules 113200–113205</text>
+<rect x="563" y="216" width="162" height="34" rx="17" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.4"/>
+<circle cx="580" cy="233" r="4" fill="#7c3aed"/>
+<text x="593" y="238" font-size="14" fill="#475569" font-weight="600">MITRE T1595 +4</text>
+<rect x="737" y="216" width="188" height="34" rx="17" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.4"/>
+<circle cx="754" cy="233" r="4" fill="#7c3aed"/>
+<text x="767" y="238" font-size="14" fill="#475569" font-weight="600">5-panel dashboard</text>
+<text x="1236" y="298" font-size="12" fill="#cbd5e1" text-anchor="end" font-family="'DejaVu Sans Mono','Consolas',monospace">wazuh-soc-enterprise</text>
+</svg>

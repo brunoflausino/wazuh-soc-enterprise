@@ -1,3 +1,10 @@
+<!-- soc-banner -->
+<p align="center"><img src="assets/banners/banner-veracrypt.svg" alt="VeraCrypt — Wazuh SOC" width="100%"></p>
+
+<p align="center">
+<img src="https://img.shields.io/badge/VeraCrypt-encryption-059669?style=for-the-badge&logo=veracrypt&logoColor=white" alt="VeraCrypt"> <img src="https://img.shields.io/badge/Wazuh-4.14.5-3B7DDD?style=for-the-badge" alt="Wazuh"> <img src="https://img.shields.io/badge/status-validated-2ea44f?style=for-the-badge" alt="Status">
+</p>
+
 # **VeraCrypt Integration with Wazuh Monitoring**
 
 ## **1. Overview**

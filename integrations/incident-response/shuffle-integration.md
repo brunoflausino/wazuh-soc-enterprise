@@ -1,3 +1,10 @@
+<!-- soc-banner -->
+<p align="center"><img src="assets/banners/banner-shuffle.svg" alt="Shuffle — Wazuh SOC" width="100%"></p>
+
+<p align="center">
+<img src="https://img.shields.io/badge/Shuffle-SOAR-e11d48?style=for-the-badge&logo=shuffle&logoColor=white" alt="Shuffle"> <img src="https://img.shields.io/badge/Wazuh-4.14.5-3B7DDD?style=for-the-badge" alt="Wazuh"> <img src="https://img.shields.io/badge/status-validated-2ea44f?style=for-the-badge" alt="Status"> <img src="https://img.shields.io/badge/MITRE%20ATT%26CK-T1548.001-E23E3E?style=for-the-badge" alt="MITRE">
+</p>
+
 # Shuffle SOAR Integration with Wazuh
 
 **Tool:** Shuffle SOAR (Docker Compose stack, `/opt/shuffle`)

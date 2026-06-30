@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" font-family="'DejaVu Sans','Segoe UI',Arial,sans-serif">
+<defs><linearGradient id="band" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0891b2"/><stop offset="1" stop-color="#155e75"/></linearGradient></defs>
+<rect x="2" y="2" width="1276" height="316" rx="20" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+<clipPath id="lc"><rect x="2" y="2" width="300" height="316" rx="20"/></clipPath>
+<g clip-path="url(#lc)"><rect x="2" y="2" width="320" height="316" fill="url(#band)"/></g>
+<g><rect x="112.9" y="90.4" width="78.2" height="15.6" rx="3.7" fill="#fff" opacity="1.00"/><rect x="112.9" y="115.7" width="78.2" height="15.6" rx="3.7" fill="#fff" opacity="0.82"/><rect x="112.9" y="141.0" width="78.2" height="15.6" rx="3.7" fill="#fff" opacity="0.64"/></g>
+<text x="152.0" y="230" font-size="20" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="1">SYSTEM INVENTORY</text>
+<text x="152.0" y="258" font-size="14" fill="#ffffff" opacity="0.85" text-anchor="middle" font-family="'DejaVu Sans Mono','Consolas',monospace">1 integration</text>
+<text x="346" y="74" font-size="15" fill="#94a3b8" font-family="'DejaVu Sans Mono','Consolas',monospace">integrations / system-inventory</text>
+<text x="346" y="150" font-size="46" font-weight="800" fill="#0f172a">System Inventory</text>
+<text x="346" y="190" font-size="19" fill="#475569">endpoint queries</text>
+<rect x="346" y="204" width="64" height="4" rx="2" fill="#0891b2"/>
+<rect x="346" y="226" width="231" height="34" rx="17" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.4"/>
+<circle cx="363" cy="243" r="4" fill="#0891b2"/>
+<text x="376" y="248" font-size="14" fill="#475569" font-weight="600">see integrations below</text>
+<text x="1236" y="298" font-size="12" fill="#cbd5e1" text-anchor="end" font-family="'DejaVu Sans Mono','Consolas',monospace">wazuh-soc-enterprise</text>
+</svg>

@@ -1,3 +1,10 @@
+<!-- soc-banner -->
+<p align="center"><img src="assets/banners/banner-zeek.svg" alt="Zeek — Wazuh SOC" width="100%"></p>
+
+<p align="center">
+<img src="https://img.shields.io/badge/Zeek-NSM-4f46e5?style=for-the-badge&logo=zeek&logoColor=white" alt="Zeek"> <img src="https://img.shields.io/badge/Wazuh-4.14.5-3B7DDD?style=for-the-badge" alt="Wazuh"> <img src="https://img.shields.io/badge/status-validated-2ea44f?style=for-the-badge" alt="Status">
+</p>
+
 ### Complete Installation Guide for Zeek v8.1.2 on Ubuntu 24.04 LTS
 
 ## Objective

@@ -1,3 +1,10 @@
+<!-- soc-banner -->
+<p align="center"><img src="assets/banners/banner-gnn-vs-tabular-scan-detection.svg" alt="GNN vs XGBoost — Wazuh SOC" width="100%"></p>
+
+<p align="center">
+<img src="https://img.shields.io/badge/GNN%20vs%20XGBoost-benchmark-c026d3?style=for-the-badge&logo=gnn-vs-tabular-scan-detection&logoColor=white" alt="GNN vs XGBoost"> <img src="https://img.shields.io/badge/Wazuh-4.14.5-3B7DDD?style=for-the-badge" alt="Wazuh"> <img src="https://img.shields.io/badge/status-validated-2ea44f?style=for-the-badge" alt="Status"> <img src="https://img.shields.io/badge/MITRE%20ATT%26CK-T1046-E23E3E?style=for-the-badge" alt="MITRE">
+</p>
+
 # Do Graph Neural Networks Beat Gradient Boosting for Network Scan Detection?
 
 ### A rigorous negative result on ~2M real Suricata flows (MITRE ATT&CK T1046)

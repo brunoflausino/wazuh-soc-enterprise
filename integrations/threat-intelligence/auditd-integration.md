@@ -1,3 +1,10 @@
+<!-- soc-banner -->
+<p align="center"><img src="assets/banners/banner-auditd.svg" alt="Auditd — Wazuh SOC" width="100%"></p>
+
+<p align="center">
+<img src="https://img.shields.io/badge/Auditd-auditd-7c3aed?style=for-the-badge&logo=auditd&logoColor=white" alt="Auditd"> <img src="https://img.shields.io/badge/Wazuh-4.14.5-3B7DDD?style=for-the-badge" alt="Wazuh"> <img src="https://img.shields.io/badge/status-validated-2ea44f?style=for-the-badge" alt="Status"> <img src="https://img.shields.io/badge/MITRE%20ATT%26CK-T1059-E23E3E?style=for-the-badge" alt="MITRE">
+</p>
+
 # Auditd MITRE ATT&CK + Wazuh — Endpoint Audit Integration
 
 ![Wazuh](https://img.shields.io/badge/Wazuh-4.14.5-blue?style=flat-square)

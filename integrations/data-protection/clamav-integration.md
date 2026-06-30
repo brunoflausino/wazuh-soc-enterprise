@@ -1,3 +1,10 @@
+<!-- soc-banner -->
+<p align="center"><img src="assets/banners/banner-clamav.svg" alt="ClamAV — Wazuh SOC" width="100%"></p>
+
+<p align="center">
+<img src="https://img.shields.io/badge/ClamAV-AV-059669?style=for-the-badge&logo=clamav&logoColor=white" alt="ClamAV"> <img src="https://img.shields.io/badge/Wazuh-4.14.5-3B7DDD?style=for-the-badge" alt="Wazuh"> <img src="https://img.shields.io/badge/status-validated-2ea44f?style=for-the-badge" alt="Status">
+</p>
+
 # **ClamAV Integration with Wazuh Monitoring**
 
 ## **1. Overview**

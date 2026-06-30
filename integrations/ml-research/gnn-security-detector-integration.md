@@ -1,3 +1,10 @@
+<!-- soc-banner -->
+<p align="center"><img src="assets/banners/banner-gnn-security-detector.svg" alt="GNN Detector — Wazuh SOC" width="100%"></p>
+
+<p align="center">
+<img src="https://img.shields.io/badge/GNN%20Detector-GNN-c026d3?style=for-the-badge&logo=gnn-security-detector&logoColor=white" alt="GNN Detector"> <img src="https://img.shields.io/badge/Wazuh-4.14.5-3B7DDD?style=for-the-badge" alt="Wazuh"> <img src="https://img.shields.io/badge/status-validated-2ea44f?style=for-the-badge" alt="Status"> <img src="https://img.shields.io/badge/MITRE%20ATT%26CK-T1046-E23E3E?style=for-the-badge" alt="MITRE">
+</p>
+
 # GNN Security Detector — Wazuh Integration
 
 **Integration #19 — ML-based Anomaly Detection**  

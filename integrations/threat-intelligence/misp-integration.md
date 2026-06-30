@@ -1,3 +1,10 @@
+<!-- soc-banner -->
+<p align="center"><img src="assets/banners/banner-misp.svg" alt="MISP — Wazuh SOC" width="100%"></p>
+
+<p align="center">
+<img src="https://img.shields.io/badge/MISP-threat--intel-7c3aed?style=for-the-badge&logo=misp&logoColor=white" alt="MISP"> <img src="https://img.shields.io/badge/Wazuh-4.14.5-3B7DDD?style=for-the-badge" alt="Wazuh"> <img src="https://img.shields.io/badge/status-validated-2ea44f?style=for-the-badge" alt="Status"> <img src="https://img.shields.io/badge/MITRE%20ATT%26CK-T1071-E23E3E?style=for-the-badge" alt="MITRE">
+</p>
+
 # MISP (Malware Information Sharing Platform) — Wazuh Integration
 
 ## Table of Contents

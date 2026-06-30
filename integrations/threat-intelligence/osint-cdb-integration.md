@@ -1,3 +1,10 @@
+<!-- soc-banner -->
+<p align="center"><img src="assets/banners/banner-osint-cdb.svg" alt="OSINT CDB — Wazuh SOC" width="100%"></p>
+
+<p align="center">
+<img src="https://img.shields.io/badge/OSINT%20CDB-CDB-7c3aed?style=for-the-badge&logo=osint-cdb&logoColor=white" alt="OSINT CDB"> <img src="https://img.shields.io/badge/Wazuh-4.14.5-3B7DDD?style=for-the-badge" alt="Wazuh"> <img src="https://img.shields.io/badge/status-validated-2ea44f?style=for-the-badge" alt="Status"> <img src="https://img.shields.io/badge/MITRE%20ATT%26CK-T1595-E23E3E?style=for-the-badge" alt="MITRE">
+</p>
+
 # Wazuh Native OSINT CDB — Threat Intelligence Integration
 
 ## Table of Contents

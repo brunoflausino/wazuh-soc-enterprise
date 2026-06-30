@@ -1,3 +1,6 @@
+<!-- soc-banner -->
+<p align="center"><img src="assets/banners/banner-system-inventory.svg" alt="system-inventory — Wazuh SOC" width="100%"></p>
+
 # System Inventory Integrations
 
 Endpoint visibility and host posture monitoring tools integrated with Wazuh.

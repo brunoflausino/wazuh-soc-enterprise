@@ -1,3 +1,6 @@
+<!-- soc-banner -->
+<p align="center"><img src="assets/banners/banner-data-protection.svg" alt="data-protection — Wazuh SOC" width="100%"></p>
+
 # Data Protection & Security Tools Integrations
 
 ## Tools Integrated

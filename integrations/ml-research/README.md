@@ -1,3 +1,6 @@
+<!-- soc-banner -->
+<p align="center"><img src="assets/banners/banner-ml-research.svg" alt="ml-research — Wazuh SOC" width="100%"></p>
+
 # 🧪 ML Research — GNN vs Tabular Benchmark + Wazuh Ingestion Framework
 
 This directory contains two related artifacts, both documented honestly for what they are:

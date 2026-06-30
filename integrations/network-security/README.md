@@ -1,3 +1,6 @@
+<!-- soc-banner -->
+<p align="center"><img src="assets/banners/banner-network-security.svg" alt="network-security — Wazuh SOC" width="100%"></p>
+
 # Network Security Integrations
 
 ## Tools Integrated

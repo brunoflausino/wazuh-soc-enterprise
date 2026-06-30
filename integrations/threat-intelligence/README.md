@@ -1,3 +1,6 @@
+<!-- soc-banner -->
+<p align="center"><img src="assets/banners/banner-threat-intelligence.svg" alt="threat-intelligence — Wazuh SOC" width="100%"></p>
+
 # Threat Intelligence & Detection - Integrations
 
 This directory documents threat intelligence and detection integrations with Wazuh SIEM for the Wazuh SOC Enterprise lab.

@@ -1,3 +1,10 @@
+<!-- soc-banner -->
+<p align="center"><img src="assets/banners/banner-freeradius.svg" alt="FreeRADIUS — Wazuh SOC" width="100%"></p>
+
+<p align="center">
+<img src="https://img.shields.io/badge/FreeRADIUS-RADIUS-d97706?style=for-the-badge&logo=freeradius&logoColor=white" alt="FreeRADIUS"> <img src="https://img.shields.io/badge/Wazuh-4.14.5-3B7DDD?style=for-the-badge" alt="Wazuh"> <img src="https://img.shields.io/badge/status-validated-2ea44f?style=for-the-badge" alt="Status"> <img src="https://img.shields.io/badge/MITRE%20ATT%26CK-T1110-E23E3E?style=for-the-badge" alt="MITRE">
+</p>
+
 # FreeRADIUS 3.2.5 — Wazuh SIEM Integration
 
 | Field           | Value                                                   |

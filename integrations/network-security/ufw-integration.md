@@ -1,3 +1,10 @@
+<!-- soc-banner -->
+<p align="center"><img src="assets/banners/banner-ufw.svg" alt="UFW — Wazuh SOC" width="100%"></p>
+
+<p align="center">
+<img src="https://img.shields.io/badge/UFW-firewall-4f46e5?style=for-the-badge&logo=ufw&logoColor=white" alt="UFW"> <img src="https://img.shields.io/badge/Wazuh-4.14.5-3B7DDD?style=for-the-badge" alt="Wazuh"> <img src="https://img.shields.io/badge/status-validated-2ea44f?style=for-the-badge" alt="Status"> <img src="https://img.shields.io/badge/MITRE%20ATT%26CK-T1110-E23E3E?style=for-the-badge" alt="MITRE">
+</p>
+
 # TECHNICAL REPORT: UFW INTEGRATION WITH WAZUH SIEM
 
 **Report Date:** October 18, 2025  

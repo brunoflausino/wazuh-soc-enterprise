@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" font-family="'DejaVu Sans','Segoe UI',Arial,sans-serif">
+<defs><linearGradient id="band" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c026d3"/><stop offset="1" stop-color="#86198f"/></linearGradient></defs>
+<rect x="2" y="2" width="1276" height="316" rx="20" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+<clipPath id="lc"><rect x="2" y="2" width="300" height="316" rx="20"/></clipPath>
+<g clip-path="url(#lc)"><rect x="2" y="2" width="320" height="316" fill="url(#band)"/></g>
+<g><line x1="106.0" y1="91.8" x2="152.0" y2="78.0" stroke="#fff" stroke-width="2.8" opacity="0.5"/><line x1="106.0" y1="91.8" x2="152.0" y2="124.0" stroke="#fff" stroke-width="2.8" opacity="0.5"/><line x1="106.0" y1="91.8" x2="152.0" y2="170.0" stroke="#fff" stroke-width="2.8" opacity="0.5"/><line x1="106.0" y1="156.2" x2="152.0" y2="78.0" stroke="#fff" stroke-width="2.8" opacity="0.5"/><line x1="106.0" y1="156.2" x2="152.0" y2="124.0" stroke="#fff" stroke-width="2.8" opacity="0.5"/><line x1="106.0" y1="156.2" x2="152.0" y2="170.0" stroke="#fff" stroke-width="2.8" opacity="0.5"/><line x1="152.0" y1="78.0" x2="198.0" y2="91.8" stroke="#fff" stroke-width="2.8" opacity="0.5"/><line x1="152.0" y1="78.0" x2="198.0" y2="156.2" stroke="#fff" stroke-width="2.8" opacity="0.5"/><line x1="152.0" y1="124.0" x2="198.0" y2="91.8" stroke="#fff" stroke-width="2.8" opacity="0.5"/><line x1="152.0" y1="124.0" x2="198.0" y2="156.2" stroke="#fff" stroke-width="2.8" opacity="0.5"/><line x1="152.0" y1="170.0" x2="198.0" y2="91.8" stroke="#fff" stroke-width="2.8" opacity="0.5"/><line x1="152.0" y1="170.0" x2="198.0" y2="156.2" stroke="#fff" stroke-width="2.8" opacity="0.5"/><circle cx="106.0" cy="91.8" r="7.4" fill="#fff"/><circle cx="106.0" cy="156.2" r="7.4" fill="#fff"/><circle cx="152.0" cy="78.0" r="7.4" fill="#fff"/><circle cx="152.0" cy="124.0" r="7.4" fill="#fff"/><circle cx="152.0" cy="170.0" r="7.4" fill="#fff"/><circle cx="198.0" cy="91.8" r="7.4" fill="#fff"/><circle cx="198.0" cy="156.2" r="7.4" fill="#fff"/></g>
+<text x="152.0" y="230" font-size="20" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="1">ML RESEARCH</text>
+<text x="152.0" y="258" font-size="13" fill="#ffffff" opacity="0.8" text-anchor="middle" font-family="'DejaVu Sans Mono','Consolas',monospace">Wazuh SOC · detection eng.</text>
+<text x="346" y="74" font-size="15" fill="#94a3b8" font-family="'DejaVu Sans Mono','Consolas',monospace">integrations / ml-research / gnn-vs-tabular-scan-detection</text>
+<text x="346" y="142" font-size="44" font-weight="800" fill="#0f172a">GNN vs XGBoost</text>
+<text x="346" y="180" font-size="18" fill="#475569">Honest benchmark — T1046</text>
+<rect x="346" y="194" width="64" height="4" rx="2" fill="#c026d3"/>
+<rect x="346" y="216" width="196" height="34" rx="17" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.4"/>
+<circle cx="363" cy="233" r="4" fill="#c026d3"/>
+<text x="376" y="238" font-size="14" fill="#475569" font-weight="600">~2M Suricata flows</text>
+<rect x="554" y="216" width="222" height="34" rx="17" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.4"/>
+<circle cx="571" cy="233" r="4" fill="#c026d3"/>
+<text x="584" y="238" font-size="14" fill="#475569" font-weight="600">PR-AUC 0.196 vs 0.093</text>
+<rect x="788" y="216" width="128" height="34" rx="17" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.4"/>
+<circle cx="805" cy="233" r="4" fill="#c026d3"/>
+<text x="818" y="238" font-size="14" fill="#475569" font-weight="600">model card</text>
+<text x="1236" y="298" font-size="12" fill="#cbd5e1" text-anchor="end" font-family="'DejaVu Sans Mono','Consolas',monospace">wazuh-soc-enterprise</text>
+</svg>

@@ -3,53 +3,44 @@
 This directory holds the custom Wazuh rules and decoders authored for this lab, exported from
 the live manager and sanitised for publication.
 
+**209 rules across 16 files.** Decoders live in [`../decoders/`](../decoders/) — 49 across 3
+files. Totals are verified by [`verify-metrics.sh`](../scripts/verify-metrics.sh) against
+[`METRICS.md`](../METRICS.md).
+
 ## Why this directory exists
 
 A detection-engineering portfolio is judged on its detections. Screenshots and prose describe
-the work; the rule XML *is* the work. Until this directory is populated, every rule and decoder
-figure quoted in this repository rests on the author's word rather than on an artifact a
-reviewer can read, diff and critique.
+the work; the rule XML *is* the work — readable, diffable and open to critique.
 
-That is the single largest remaining gap in this portfolio, and closing it costs one afternoon.
-
-## Populating it
-
-Run [`scripts/export-rules.sh`](../scripts/export-rules.sh) on the Wazuh manager. It copies
-`/var/ossec/etc/rules/*.xml` and `/var/ossec/etc/decoders/*.xml` here, redacts host-specific
-values, and prints a manual review checklist.
-
-**Nothing in this directory should be pushed without reading the diff first.** The export
-script redacts known patterns; it cannot know what is sensitive in a comment you wrote at
-02:00. Review every file before committing.
-
-## Layout
-
-```
-rules/
-├── README.md
-├── <NNNNN>-<source>.xml        # one file per log source, prefixed by its ID range
-└── ...
-decoders/
-└── <source>_decoders.xml
-```
+Files were exported from the live manager with [`scripts/export-rules.sh`](../scripts/export-rules.sh),
+which redacts internal addresses, credentials, e-mail addresses, MAC addresses and home paths,
+then reports anything that looks sensitive for manual review. Wazuh's own shipped rulesets are
+excluded; only custom work appears here.
 
 ## Rule ID allocation
 
 Ranges are allocated per source so collisions cannot happen silently. Wazuh reserves
 `100000+` for custom rules.
 
-| Range | Source | Status |
-| --- | --- | --- |
-| `100049–100099` | General / local overrides | Active |
-| `100300–100399` | YARA (incl. Active Response `100301`/`100302`) | Active |
-| `100500–100599` | Cowrie honeypot | Active |
-| `100630–100650` | GNN anomaly ingestion | Active, detector not productionised |
-| `100700–100799` | MISP | Active |
-| `110700–110799` | Auditd MITRE pack | Active |
-| `113000–113099` | Suricata correlation | Active |
-| `113100–113199` | OSINT CDB | Active |
-| `113200–113299` | SpiderFoot | Active |
-| `120000–120099` | GRR, DFIR-IRIS, CAPE, misc JSON | Active, guides pending |
+| ID range | Source | Rules | File |
+| --- | --- | :---: | --- |
+| `100000–100007` | Zeek NSM | 8 | [`11000-zeek_rules.xml`](11000-zeek_rules.xml) |
+| `100049–113103` | General, Suricata, OSINT CDB, MISP, UFW, WireGuard, VeraCrypt | 68 | [`local_rules.xml`](local_rules.xml) |
+| `100205–100209` | OpenVAS / GVM | 5 | [`openvas_rules.xml`](openvas_rules.xml) |
+| `100300–100302` | YARA (incl. Active Response) | 3 | [`yara_rules.xml`](yara_rules.xml) |
+| `100400–100419` | Velociraptor DFIR | 17 | [`velociraptor_rules.xml`](velociraptor_rules.xml) |
+| `100500–100508` | Cowrie honeypot | 9 | [`cowrie_rules.xml`](cowrie_rules.xml) |
+| `100600–100607` | Falco (eBPF) | 8 | [`falco_rules.xml`](falco_rules.xml) |
+| `100630–100650` | GNN anomaly ingestion | 8 | [`gnn_rules.xml`](gnn_rules.xml) |
+| `100660–100668` | Falco tuning | 9 | [`falco_tuning.xml`](falco_tuning.xml) |
+| `110000–110005` | Nuclei | 6 | [`nuclei_rules.xml`](nuclei_rules.xml) |
+| `110500–110502` | MITRE CALDERA | 3 | [`050-caldera-ttp-marker.xml`](050-caldera-ttp-marker.xml) |
+| `110700–110721` | Auditd MITRE pack | 22 | [`110700-auditd-mitre.xml`](110700-auditd-mitre.xml) |
+| `110750–110770` | Auditd tuning | 18 | [`110700-auditd-tuning.xml`](110700-auditd-tuning.xml) |
+| `113200–113205` | SpiderFoot OSINT | 6 | [`spiderfoot_rules.xml`](spiderfoot_rules.xml) |
+| `120000–120064` | GRR, DFIR-IRIS, CAPE, generic JSON | 16 | [`local_rules_json.xml`](local_rules_json.xml) |
+| `120200–120202` | HTTP reconnaissance | 3 | [`local_http_recon_rules.xml`](local_http_recon_rules.xml) |
+| | **Total** | **209** | **16 files** |
 
 Before adding a rule, check the range is free:
 

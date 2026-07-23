@@ -128,7 +128,7 @@ coverage of a technique; it is coverage of a tool.
 | T1573 Encrypted Channel | 🟨 | Zeek JA3/JA4 | **Metadata only** — no TLS inspection |
 | T1090 Proxy | ⬜ | — | Tor/proxy detection limited to OSINT CDB matches |
 | T1102 Web Service C2 | 🟨 | OSINT CDB `113100–113103` | Indicator-based; fails on novel infrastructure |
-| T1568 Dynamic Resolution | ⬜ | — | **No DNS telemetry.** See gap G-01 |
+| T1568 Dynamic Resolution | ⬜ | — | DNS telemetry ingested via Zeek, but **no DNS detection rules exist**. See gap G-01 |
 
 ### Impact (TA0040)
 
@@ -164,17 +164,25 @@ rather than uncovered, and are not counted as either.
 
 Ordered by detection value per unit of effort, not by severity.
 
-### G-01 — No DNS telemetry *(highest priority)*
+### G-01 — DNS telemetry is collected but not used for detection *(highest priority)*
 
-No DNS query logging exists. This is the single largest visibility gap in the lab.
+Zeek `dns.log` is ingested and indexed. DNS is the **largest single event source in the lab at
+47.89% of all Zeek events**, ahead of CONN at 47.68%. The dashboards visualise it.
 
-Missing: T1568 dynamic resolution, T1071.004 DNS C2, DGA beaconing, and most exfiltration
-patterns. DNS is where the cheapest high-value detections live.
+**Not one detection rule reads it.** The most voluminous telemetry in the environment feeds
+charts and nothing else.
 
-*Remediation:* Zeek `dns.log` is already available — the sensor produces it and it is not being
-ingested. Add a `localfile` block and write correlation rules for NXDOMAIN rate, query-length
-distribution and low-TTL patterns. **Cost: one afternoon. Value: the largest coverage gain
-available from existing telemetry.**
+Uncovered as a result: T1568 dynamic resolution, T1071.004 DNS C2, DGA beaconing, and DNS-based
+exfiltration. These are among the cheapest high-value detections available, and the data is
+already sitting in the index.
+
+*Remediation:* correlation rules over the existing `dns.log` stream — NXDOMAIN rate per host,
+query-name length and entropy distribution, low-TTL patterns, and volume of queries to
+newly-observed domains. No new telemetry, no new tooling.
+
+**Cost: one afternoon. Value: the largest coverage gain available in the lab, from data already
+being collected.** The gap is analytical, not architectural — which makes it both more
+embarrassing and easier to close.
 
 ### G-02 — No ransomware behavioural detection *(high)*
 

@@ -293,3 +293,19 @@ Good automation candidates: `authentication_failed`, `sshd`, `pam`, `suricata`, 
 ## Security Notes
 
 Treat the Shuffle **webhook URL as a secret** — an unauthenticated POST can trigger a workflow. Never commit to this repository: webhook URLs, API keys, passwords, OpenSearch credentials, or MISP/VirusTotal/IRIS keys. Any secret exposed in terminal/chat during recovery (Shuffle recovery password, MISP/VirusTotal/IRIS keys, Shuffle/OpenSearch credentials) should be rotated. The webhook ID is redacted as `webhook_<REDACTED-ID>` throughout this document.
+
+---
+
+<sub>
+<b>Navigation</b> &nbsp;
+<a href="../../README.md">Portfolio home</a> &nbsp;&middot;&nbsp;
+<a href="README.md">Incident Response & SOAR</a> &nbsp;&middot;&nbsp;
+<a href="../README.md">All 22 integrations</a> &nbsp;&middot;&nbsp;
+<a href="../../detection-coverage/attack-coverage.md">Detection coverage</a> &nbsp;&middot;&nbsp;
+<a href="../../playbooks/README.md">SOC playbooks</a> &nbsp;&middot;&nbsp;
+<a href="../../METRICS.md">Metrics</a>
+<br><br>
+Validated in a single-workstation lab. Each guide records the versions it was validated
+against; see <a href="../../README.md#lab-status">lab status</a>.
+</sub>
+

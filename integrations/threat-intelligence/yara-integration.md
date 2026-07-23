@@ -803,3 +803,19 @@ Use `.keyword` suffix for text fields in aggregations:
 **Wazuh:** 4.14.4 | **YARA:** 4.5.0 | **Ubuntu:** 24.04 LTS  
 **Author:** Bruno Flausino  
 **Repository:** [brunoflausino/wazuh-soc-enterprise](https://github.com/brunoflausino/wazuh-soc-enterprise)
+
+---
+
+<sub>
+<b>Navigation</b> &nbsp;
+<a href="../../README.md">Portfolio home</a> &nbsp;&middot;&nbsp;
+<a href="README.md">Threat Intelligence & Detection</a> &nbsp;&middot;&nbsp;
+<a href="../README.md">All 22 integrations</a> &nbsp;&middot;&nbsp;
+<a href="../../detection-coverage/attack-coverage.md">Detection coverage</a> &nbsp;&middot;&nbsp;
+<a href="../../playbooks/README.md">SOC playbooks</a> &nbsp;&middot;&nbsp;
+<a href="../../METRICS.md">Metrics</a>
+<br><br>
+Validated in a single-workstation lab. Each guide records the versions it was validated
+against; see <a href="../../README.md#lab-status">lab status</a>.
+</sub>
+

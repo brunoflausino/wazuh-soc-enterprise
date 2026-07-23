@@ -1,0 +1,51 @@
+<!-- Regras de integração Nuclei -->
+<group name="nuclei,vulnerability,">
+
+  <!-- Regra base para logs Nuclei -->
+  <rule id="110000" level="0">
+    <decoded_as>json</decoded_as>
+    <regex type="pcre2">"template-id"[[:space:]]*:[[:space:]]*"[^"]+"</regex>
+    <description>Nuclei Base Rule</description>
+  </rule>
+
+  <!-- Informação - Vulnerabilidade informativa -->
+  <rule id="110001" level="3">
+    <if_sid>110000</if_sid>
+    <field name="info.severity">info</field>
+    <description>Nuclei: Vulnerabilidade informativa - $(info.name)</description>
+    <group>nuclei,vuln_info,</group>
+  </rule>
+
+  <!-- Baixa - Vulnerabilidade de baixo risco -->
+  <rule id="110002" level="5">
+    <if_sid>110000</if_sid>
+    <field name="info.severity">low</field>
+    <description>Nuclei: Vulnerabilidade BAIXA - $(info.name) em $(host)</description>
+    <group>nuclei,vuln_low,</group>
+  </rule>
+
+  <!-- Média - Vulnerabilidade de médio risco -->
+  <rule id="110003" level="8">
+    <if_sid>110000</if_sid>
+    <field name="info.severity">medium</field>
+    <description>Nuclei: Vulnerabilidade MEDIA - $(info.name) em $(host)</description>
+    <group>nuclei,vuln_medium,</group>
+  </rule>
+
+  <!-- Alta - Vulnerabilidade de alto risco -->
+  <rule id="110004" level="12">
+    <if_sid>110000</if_sid>
+    <field name="info.severity">high</field>
+    <description>Nuclei: Vulnerabilidade ALTA - $(info.name) em $(host)</description>
+    <group>nuclei,vuln_high,</group>
+  </rule>
+
+  <!-- Crítica - Vulnerabilidade crítica -->
+  <rule id="110005" level="15">
+    <if_sid>110000</if_sid>
+    <field name="info.severity">critical</field>
+    <description>Nuclei: Vulnerabilidade CRITICA - $(info.name) em $(host)</description>
+    <group>nuclei,vuln_critical,</group>
+  </rule>
+
+</group>

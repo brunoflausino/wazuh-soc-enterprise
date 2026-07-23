@@ -454,3 +454,19 @@ integrations/ml-research/
 ---
 
 *This integration was developed and validated as part of the `wazuh-soc-enterprise` portfolio lab — a production-grade bare-metal SOC environment running Wazuh 4.14.x on Ubuntu 24.04 LTS.*
+
+---
+
+<sub>
+<b>Navigation</b> &nbsp;
+<a href="../../README.md">Portfolio home</a> &nbsp;&middot;&nbsp;
+<a href="README.md">ML Research</a> &nbsp;&middot;&nbsp;
+<a href="../README.md">All 22 integrations</a> &nbsp;&middot;&nbsp;
+<a href="../../detection-coverage/attack-coverage.md">Detection coverage</a> &nbsp;&middot;&nbsp;
+<a href="../../playbooks/README.md">SOC playbooks</a> &nbsp;&middot;&nbsp;
+<a href="../../METRICS.md">Metrics</a>
+<br><br>
+Validated in a single-workstation lab. Each guide records the versions it was validated
+against; see <a href="../../README.md#lab-status">lab status</a>.
+</sub>
+

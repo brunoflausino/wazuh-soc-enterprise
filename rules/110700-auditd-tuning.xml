@@ -1,0 +1,97 @@
+<group name="auditd_mitre_tuning,">
+
+  <rule id="110750" level="0">
+    <if_sid>110706</if_sid>
+    <field name="audit.exe">/usr/bin/clamscan</field>
+    <description>Tuning: T1548.001 suppressed - ClamAV scan</description>
+  </rule>
+  <rule id="110751" level="0">
+    <if_sid>110706</if_sid>
+    <field name="audit.exe">/usr/bin/dpkg</field>
+    <description>Tuning: T1548.001 suppressed - dpkg</description>
+  </rule>
+  <rule id="110752" level="0">
+    <if_sid>110706</if_sid>
+    <field name="audit.exe">/usr/bin/rsync</field>
+    <description>Tuning: T1548.001 suppressed - rsync</description>
+  </rule>
+  <rule id="110753" level="0">
+    <if_sid>110706</if_sid>
+    <field name="audit.exe" type="pcre2">^/snap/firefox</field>
+    <description>Tuning: T1548.001 suppressed - Firefox snap</description>
+  </rule>
+  <rule id="110754" level="0">
+    <if_sid>110706</if_sid>
+    <field name="audit.exe">/usr/bin/eog</field>
+    <description>Tuning: T1548.001 suppressed - eog</description>
+  </rule>
+  <rule id="110755" level="0">
+    <if_sid>110706</if_sid>
+    <field name="audit.exe">/usr/bin/apt</field>
+    <description>Tuning: T1548.001 suppressed - apt</description>
+  </rule>
+  <rule id="110756" level="0">
+    <if_sid>110706</if_sid>
+    <field name="audit.exe">/usr/bin/evince</field>
+    <description>Tuning: T1548.001 suppressed - Evince</description>
+  </rule>
+  <rule id="110757" level="0">
+    <if_sid>110706</if_sid>
+    <field name="audit.exe">/usr/bin/nautilus</field>
+    <description>Tuning: T1548.001 suppressed - Nautilus</description>
+  </rule>
+  <rule id="110758" level="0">
+    <if_sid>110706</if_sid>
+    <field name="audit.exe">/usr/bin/bash</field>
+    <description>Tuning: T1548.001 suppressed - bash script</description>
+  </rule>
+  <rule id="110759" level="0">
+    <if_sid>110706</if_sid>
+    <field name="audit.exe">/opt/brave.com/brave/brave</field>
+    <description>Tuning: T1548.001 suppressed - Brave browser</description>
+  </rule>
+  <rule id="110760" level="0">
+    <if_sid>110706</if_sid>
+    <field name="audit.exe">/usr/bin/gnome-shell</field>
+    <description>Tuning: T1548.001 suppressed - gnome-shell</description>
+  </rule>
+  <rule id="110761" level="0">
+    <if_sid>110706</if_sid>
+    <field name="audit.exe">/usr/bin/mandb</field>
+    <description>Tuning: T1548.001 suppressed - mandb</description>
+  </rule>
+  <rule id="110762" level="0">
+    <if_sid>110706</if_sid>
+    <field name="audit.exe">/usr/bin/tar</field>
+    <description>Tuning: T1548.001 suppressed - tar</description>
+  </rule>
+  <rule id="110763" level="0">
+    <if_sid>110706</if_sid>
+    <field name="audit.exe" type="pcre2">^/usr/lib/libreoffice/</field>
+    <description>Tuning: T1548.001 suppressed - LibreOffice</description>
+  </rule>
+  <rule id="110764" level="0">
+    <if_sid>110706</if_sid>
+    <field name="audit.exe" type="pcre2">^/usr/libexec/xdg-desktop-portal</field>
+    <description>Tuning: T1548.001 suppressed - xdg-desktop-portal</description>
+  </rule>
+  <rule id="110765" level="0">
+    <if_sid>110706</if_sid>
+    <field name="audit.exe">/usr/libexec/dconf-service</field>
+    <description>Tuning: T1548.001 suppressed - dconf-service</description>
+  </rule>
+  <rule id="110766" level="0">
+    <if_sid>110706</if_sid>
+    <field name="audit.exe">/var/ossec/bin/wazuh-analysisd</field>
+    <description>Tuning: T1548.001 suppressed - wazuh-analysisd</description>
+  </rule>
+
+  <!-- Catch-all: suppress 110706 from non-root users (auid >= 1000) -->
+  <!-- Real SUID escalation requires root context; user-level chmod is desktop noise -->
+  <rule id="110770" level="0">
+    <if_sid>110706</if_sid>
+    <field name="audit.auid" type="pcre2">^\d{4,}$</field>
+    <description>Tuning: T1548.001 suppressed - non-root user chmod</description>
+  </rule>
+
+</group>

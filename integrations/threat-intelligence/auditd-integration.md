@@ -899,3 +899,19 @@ Custom rules extend native rules 80780, 80783, 80789, and 80792 via `<if_sid>`.
 - [Wazuh custom decoders and rules](https://documentation.wazuh.com/current/user-manual/ruleset/custom.html)
 - [MITRE ATT&CK — Linux techniques](https://attack.mitre.org/matrices/enterprise/linux/)
 - [Neo23x0 — auditd best practice rules](https://github.com/Neo23x0/auditd)
+
+---
+
+<sub>
+<b>Navigation</b> &nbsp;
+<a href="../../README.md">Portfolio home</a> &nbsp;&middot;&nbsp;
+<a href="README.md">Threat Intelligence & Detection</a> &nbsp;&middot;&nbsp;
+<a href="../README.md">All 22 integrations</a> &nbsp;&middot;&nbsp;
+<a href="../../detection-coverage/attack-coverage.md">Detection coverage</a> &nbsp;&middot;&nbsp;
+<a href="../../playbooks/README.md">SOC playbooks</a> &nbsp;&middot;&nbsp;
+<a href="../../METRICS.md">Metrics</a>
+<br><br>
+Validated in a single-workstation lab. Each guide records the versions it was validated
+against; see <a href="../../README.md#lab-status">lab status</a>.
+</sub>
+

@@ -598,3 +598,19 @@ No modifications were made to `/var/ossec/etc/ossec.conf` or any existing Wazuh 
 - [MITRE Caldera GitHub — v5.3.0](https://github.com/mitre/caldera/releases/tag/5.3.0)
 - [Wazuh MITRE ATT&CK integration](https://documentation.wazuh.com/current/user-manual/ruleset/mitre.html)
 - [Wazuh custom decoders and rules](https://documentation.wazuh.com/current/user-manual/ruleset/custom.html)
+
+---
+
+<sub>
+<b>Navigation</b> &nbsp;
+<a href="../../README.md">Portfolio home</a> &nbsp;&middot;&nbsp;
+<a href="README.md">Threat Intelligence & Detection</a> &nbsp;&middot;&nbsp;
+<a href="../README.md">All 22 integrations</a> &nbsp;&middot;&nbsp;
+<a href="../../detection-coverage/attack-coverage.md">Detection coverage</a> &nbsp;&middot;&nbsp;
+<a href="../../playbooks/README.md">SOC playbooks</a> &nbsp;&middot;&nbsp;
+<a href="../../METRICS.md">Metrics</a>
+<br><br>
+Validated in a single-workstation lab. Each guide records the versions it was validated
+against; see <a href="../../README.md#lab-status">lab status</a>.
+</sub>
+

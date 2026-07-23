@@ -1,0 +1,45 @@
+<!-- OpenVAS/Greenbone Vulnerability Scanner Integration Rules -->
+<!-- IDs: 100205-100209 (faixa livre verificada) -->
+<group name="openvas,vulnerability_scanner,">
+
+  <!-- Base rule: matches any OpenVAS event -->
+  <rule id="100205" level="0">
+    <decoded_as>json</decoded_as>
+    <match>"integration":"openvas"</match>
+    <description>OpenVAS: Vulnerability scan result received</description>
+    <group>openvas,vulnerability_scanner,</group>
+  </rule>
+
+  <!-- Low severity (0.1 - 3.9) -->
+  <rule id="100206" level="5">
+    <if_sid>100205</if_sid>
+    <match>"severity_label":"low"</match>
+    <description>OpenVAS: Low severity vulnerability detected on $(data.host_ip)</description>
+    <group>openvas,vulnerability_scanner,low_severity,</group>
+  </rule>
+
+  <!-- Medium severity (4.0 - 6.9) -->
+  <rule id="100207" level="7">
+    <if_sid>100205</if_sid>
+    <match>"severity_label":"medium"</match>
+    <description>OpenVAS: Medium severity vulnerability detected on $(data.host_ip)</description>
+    <group>openvas,vulnerability_scanner,medium_severity,</group>
+  </rule>
+
+  <!-- High severity (7.0 - 8.9) -->
+  <rule id="100208" level="10">
+    <if_sid>100205</if_sid>
+    <match>"severity_label":"high"</match>
+    <description>OpenVAS: High severity vulnerability detected on $(data.host_ip)</description>
+    <group>openvas,vulnerability_scanner,high_severity,</group>
+  </rule>
+
+  <!-- Critical severity (9.0 - 10.0) -->
+  <rule id="100209" level="13">
+    <if_sid>100205</if_sid>
+    <match>"severity_label":"critical"</match>
+    <description>OpenVAS: Critical severity vulnerability detected on $(data.host_ip)</description>
+    <group>openvas,vulnerability_scanner,critical_severity,</group>
+  </rule>
+
+</group>

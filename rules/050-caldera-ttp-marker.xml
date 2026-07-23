@@ -1,0 +1,24 @@
+<group name="caldera,adversary_emulation,">
+
+  <rule id="110500" level="0" noalert="1">
+    <decoded_as>caldera-ttp-marker</decoded_as>
+    <description>CALDERA marker grouping</description>
+  </rule>
+
+  <rule id="110501" level="8">
+    <if_sid>110500</if_sid>
+    <description>CALDERA TTP marker: technique=$(caldera.technique_id) op=$(caldera.operation) ability=$(caldera.ability) agent=$(caldera.agent) status=$(caldera.status)</description>
+    <group>caldera,mitre_attack,adversary_emulation,</group>
+  </rule>
+
+  <rule id="110502" level="10">
+    <if_sid>110500</if_sid>
+    <field name="caldera.technique_id">^T1082$</field>
+    <description>CALDERA T1082 marker detected: op=$(caldera.operation) ability=$(caldera.ability) agent=$(caldera.agent) status=$(caldera.status)</description>
+    <mitre>
+      <id>T1082</id>
+    </mitre>
+    <group>caldera,mitre_attack,discovery,</group>
+  </rule>
+
+</group>

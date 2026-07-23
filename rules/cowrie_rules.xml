@@ -1,0 +1,98 @@
+<!-- ============================================================ -->
+<!-- Cowrie Honeypot Rules                                        -->
+<!-- Range: 100500-100510                                         -->
+<!-- ============================================================ -->
+
+<group name="cowrie,honeypot,">
+
+  <!-- Regra base: qualquer evento Cowrie -->
+  <rule id="100500" level="3">
+    <decoded_as>json</decoded_as>
+    <match>"eventid":"cowrie.</match>
+    <description>Cowrie Honeypot: evento detectado</description>
+    <group>cowrie,</group>
+  </rule>
+
+  <!-- Nova conexão ao honeypot -->
+  <rule id="100501" level="6">
+    <if_sid>100500</if_sid>
+    <match>"eventid":"cowrie.session.connect</match>
+    <description>Cowrie: Nova conexão ao honeypot</description>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+    <group>cowrie,connection,</group>
+  </rule>
+
+  <!-- Login falhou -->
+  <rule id="100502" level="8">
+    <if_sid>100500</if_sid>
+    <match>"eventid":"cowrie.login.failed</match>
+    <description>Cowrie: Tentativa de login falhou no honeypot</description>
+    <mitre>
+      <id>T1110.001</id>
+    </mitre>
+    <group>cowrie,authentication_failed,</group>
+  </rule>
+
+  <!-- Login bem-sucedido — CRÍTICO -->
+  <rule id="100503" level="12">
+    <if_sid>100500</if_sid>
+    <match>"eventid":"cowrie.login.success</match>
+    <description>Cowrie: Login bem-sucedido no honeypot</description>
+    <mitre>
+      <id>T1110.001</id>
+    </mitre>
+    <group>cowrie,authentication_success,</group>
+  </rule>
+
+  <!-- Comando executado no honeypot -->
+  <rule id="100504" level="10">
+    <if_sid>100500</if_sid>
+    <match>"eventid":"cowrie.command.input</match>
+    <description>Cowrie: Comando executado no honeypot</description>
+    <mitre>
+      <id>T1059</id>
+    </mitre>
+    <group>cowrie,command,</group>
+  </rule>
+
+  <!-- Tentativa de download de malware -->
+  <rule id="100505" level="14">
+    <if_sid>100504</if_sid>
+    <match>"input":"wget|"input":"curl|"input":"tftp|"input":"ftpget</match>
+    <description>Cowrie: Tentativa de download de malware no honeypot</description>
+    <mitre>
+      <id>T1105</id>
+    </mitre>
+    <group>cowrie,malware_download,</group>
+  </rule>
+
+  <!-- Comando não encontrado -->
+  <rule id="100506" level="5">
+    <if_sid>100500</if_sid>
+    <match>"eventid":"cowrie.command.failed</match>
+    <description>Cowrie: Comando não reconhecido no honeypot</description>
+    <group>cowrie,command_failed,</group>
+  </rule>
+
+  <!-- Sessão encerrada -->
+  <rule id="100507" level="3">
+    <if_sid>100500</if_sid>
+    <match>"eventid":"cowrie.session.closed</match>
+    <description>Cowrie: Sessão encerrada no honeypot</description>
+    <group>cowrie,session_closed,</group>
+  </rule>
+
+  <!-- Fingerprint de cliente SSH -->
+  <rule id="100508" level="6">
+    <if_sid>100500</if_sid>
+    <match>"eventid":"cowrie.client.version</match>
+    <description>Cowrie: Versão SSH do cliente identificada</description>
+    <mitre>
+      <id>T1046</id>
+    </mitre>
+    <group>cowrie,recon,</group>
+  </rule>
+
+</group>

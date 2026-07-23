@@ -2,7 +2,9 @@
 
 Each integration below has a dedicated markdown guide with configuration, validated
 `wazuh-logtest` / `wazuh-analysisd -t` output, OpenSearch DevTools queries, and dashboard
-screenshots. This index lists **only** integrations that are deployed **and** documented.
+screenshots captured during validation. This index lists **only** integrations that were
+deployed, validated end-to-end **and** documented. See [lab status](../README.md#lab-status) for
+which run continuously and which are brought up per project.
 
 All counts on this page are verified by [`scripts/verify-metrics.sh`](../scripts/verify-metrics.sh)
 against [`METRICS.md`](../METRICS.md). Do not edit them by hand.

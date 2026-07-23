@@ -1,0 +1,305 @@
+<!--
+  Arquivo de decodificadores revisado sem uso de custom parents.
+  Inclui decodificadores originais e novos decodificadores Zeek.
+
+  NOTA CRITICA (Wazuh):
+  zeek-json-base NAO pode ter <parent> (ex.: json), porque um decoder filho nao pode ser pai.
+  Este arquivo NAO usa tag raiz - o parser do Wazuh aceita multiplos elementos no nivel raiz.
+-->
+
+<!-- =========================
+ SYSLOG PROGRAM NAME DECODERS
+========================= -->
+<decoder name="wireguard-vpn-syslog">
+  <program_name>wireguard-vpn</program_name>
+</decoder>
+
+
+<decoder name="nwipe-syslog">
+  <program_name>nwipe</program_name>
+</decoder>
+
+<decoder name="veracrypt-syslog">
+  <program_name>veracrypt</program_name>
+</decoder>
+
+<decoder name="restic-syslog">
+  <program_name>restic</program_name>
+</decoder>
+
+<decoder name="caldera-syslog">
+  <program_name>caldera</program_name>
+</decoder>
+
+<!-- =========================
+ WIREGUARD CHILD DECODERS
+========================= -->
+<decoder name="wireguard-vpn-child">
+  <parent>wireguard-vpn-syslog</parent>
+  <regex type="pcre2">Receiving handshake initiation from peer \d+ \((\S+:\d+)\)</regex>
+  <order>src_ip</order>
+</decoder>
+
+<decoder name="wireguard-vpn-child">
+  <parent>wireguard-vpn-syslog</parent>
+  <regex type="pcre2">Invalid handshake initiation from (\S+:\d+)</regex>
+  <order>src_ip</order>
+</decoder>
+
+
+<!-- =========================
+ NWIPE CHILD DECODER
+========================= -->
+<decoder name="nwipe-child">
+  <parent>nwipe-syslog</parent>
+  <regex type="pcre2">Device (\S+) status: (Erased|FAILED|UABORTED)</regex>
+  <order>device,status</order>
+</decoder>
+
+<!-- =========================
+ RESTIC CHILD DECODERS
+========================= -->
+<decoder name="restic-child">
+  <parent>restic-syslog</parent>
+  <regex type="pcre2">^snapshot (\w+) saved</regex>
+  <order>id</order>
+</decoder>
+
+<decoder name="restic-child">
+  <parent>restic-syslog</parent>
+  <regex type="pcre2">^error: (.*)</regex>
+  <order>error_message</order>
+</decoder>
+ ZEEK DECODERS (JSON SEM "_path")
+========================= -->
+<decoder name="zeek-json-base">
+  <prematch type="pcre2">^\{.*"uid":"[^"]+".*"id_orig_h":"[^"]+".*</prematch>
+</decoder>
+
+<decoder name="zeek-json-conn">
+  <parent>zeek-json-base</parent>
+  <use_own_name>true</use_own_name>
+  <prematch type="pcre2">"conn_state":"</prematch>
+  <regex type="pcre2">^(?=.*"id_orig_h":"([^"]+)")(?=.*"id_orig_p":([0-9]+))(?=.*"id_resp_h":"([^"]+)")(?=.*"id_resp_p":([0-9]+))(?=.*"proto":"([^"]+)")(?=.*"uid":"([^"]+)")(?=.*"service":(?:"([^"]+)"|null))(?=.*"conn_state":"([^"]+)")(?=.*"orig_bytes":([0-9]+|null))(?=.*"resp_bytes":([0-9]+|null)).*</regex>
+  <order>srcip,srcport,dstip,dstport,protocol,zeek_uid,zeek_service,zeek_conn_state,zeek_orig_bytes,zeek_resp_bytes</order>
+</decoder>
+
+<decoder name="zeek-json-dns">
+  <parent>zeek-json-base</parent>
+  <use_own_name>true</use_own_name>
+  <prematch type="pcre2">"qtype_name":"</prematch>
+  <regex type="pcre2">^(?=.*"id_orig_h":"([^"]+)")(?=.*"id_orig_p":([0-9]+))(?=.*"id_resp_h":"([^"]+)")(?=.*"id_resp_p":([0-9]+))(?=.*"proto":"([^"]+)")(?=.*"uid":"([^"]+)")(?=.*"query":"([^"]+)")(?=.*"qtype_name":"([^"]+)")(?=.*"rcode_name":(?:"([^"]+)"|null)).*</regex>
+  <order>srcip,srcport,dstip,dstport,protocol,zeek_uid,zeek_dns_query,zeek_dns_qtype_name,zeek_dns_rcode_name</order>
+</decoder>
+
+<decoder name="zeek-json-http">
+  <parent>zeek-json-base</parent>
+  <use_own_name>true</use_own_name>
+  <prematch type="pcre2">"status_code":</prematch>
+  <regex type="pcre2">^(?=.*"id_orig_h":"([^"]+)")(?=.*"id_orig_p":([0-9]+))(?=.*"id_resp_h":"([^"]+)")(?=.*"id_resp_p":([0-9]+))(?=.*"proto":"([^"]+)")(?=.*"uid":"([^"]+)")(?=.*"host":"([^"]+)")(?=.*"uri":"([^"]+)")(?=.*"method":"([^"]+)")(?=.*"status_code":([0-9]+)).*</regex>
+  <order>srcip,srcport,dstip,dstport,protocol,zeek_uid,zeek_http_host,zeek_http_uri,zeek_http_method,zeek_http_status_code</order>
+</decoder>
+
+<decoder name="zeek-json-ssl-sni">
+  <parent>zeek-json-base</parent>
+  <use_own_name>true</use_own_name>
+  <prematch type="pcre2">"server_name":"</prematch>
+  <regex type="pcre2">^(?=.*"id_orig_h":"([^"]+)")(?=.*"id_orig_p":([0-9]+))(?=.*"id_resp_h":"([^"]+)")(?=.*"id_resp_p":([0-9]+))(?=.*"proto":"([^"]+)")(?=.*"uid":"([^"]+)")(?=.*"server_name":"([^"]+)")(?=.*"version":"([^"]+)")(?=.*"cipher":"([^"]+)").*</regex>
+  <order>srcip,srcport,dstip,dstport,protocol,zeek_uid,zeek_ssl_server_name,zeek_ssl_version,zeek_ssl_cipher</order>
+</decoder>
+
+<decoder name="zeek-json-ssl-basic">
+  <parent>zeek-json-base</parent>
+  <use_own_name>true</use_own_name>
+  <prematch type="pcre2">"cipher":"</prematch>
+  <regex type="pcre2">^(?=.*"id_orig_h":"([^"]+)")(?=.*"id_orig_p":([0-9]+))(?=.*"id_resp_h":"([^"]+)")(?=.*"id_resp_p":([0-9]+))(?=.*"proto":"([^"]+)")(?=.*"uid":"([^"]+)")(?=.*"version":"([^"]+)")(?=.*"cipher":"([^"]+)").*</regex>
+  <order>srcip,srcport,dstip,dstport,protocol,zeek_uid,zeek_ssl_version,zeek_ssl_cipher</order>
+</decoder>
+
+<decoder name="zeek-json-weird">
+  <parent>zeek-json-base</parent>
+  <use_own_name>true</use_own_name>
+  <prematch type="pcre2">"name":"</prematch>
+  <regex type="pcre2">^(?=.*"id_orig_h":"([^"]+)")(?=.*"id_orig_p":([0-9]+))(?=.*"id_resp_h":"([^"]+)")(?=.*"id_resp_p":([0-9]+))(?=.*"proto":"([^"]+)")(?=.*"uid":"([^"]+)")(?=.*"name":"([^"]+)").*</regex>
+  <order>srcip,srcport,dstip,dstport,protocol,zeek_uid,zeek_weird_name</order>
+</decoder>
+
+<!-- =========================
+ FREERADIUS DECODERS
+========================= -->
+<decoder name="freeradius-parent">
+  <prematch>Auth:</prematch>
+</decoder>
+
+<decoder name="freeradius-auth-ok">
+  <parent>freeradius-parent</parent>
+  <prematch type="pcre2">(?:\[\d+\]:)?\s*Auth:.*Login OK</prematch>
+  <regex type="pcre2">(?:\[\d+\]:)?\s*Auth:\s+\(\d+\)\s+Login OK:\s+\[([^\]]+)\]\s+\(from client\s+(\S+)\s+port\s+\d+(?:\s+cli\s+([0-9A-Fa-f:-]+))?\)</regex>
+  <order>username,authenticator,mac</order>
+</decoder>
+
+<decoder name="freeradius-auth-fail">
+  <parent>freeradius-parent</parent>
+  <prematch type="pcre2">(?:\[\d+\]:)?\s*Auth:.*Login incorrect</prematch>
+  <regex type="pcre2">(?:\[\d+\]:)?\s*Auth:\s+\(\d+\)\s+Login incorrect\s+\(([^)]+)\):\s+\[([^/\\\]]+)(?:/.*)?\]\s+\(from client\s+(\S+)\s+port\s+\d+(?:\s+cli\s+([0-9A-Fa-f:-]+))?\)</regex>
+  <order>reason,username,authenticator,mac</order>
+</decoder>
+
+<!-- =========================
+ WAZUH COMPONENTS (SYSLOG)
+========================= -->
+<decoder name="wazuh-manager-syslog">
+  <program_name>wazuh-manager</program_name>
+</decoder>
+
+<decoder name="wazuh-indexer-syslog">
+  <program_name>wazuh-indexer</program_name>
+</decoder>
+
+<decoder name="wazuh-dashboard-syslog">
+  <program_name>wazuh-dashboard</program_name>
+</decoder>
+
+<decoder name="filebeat-syslog">
+  <program_name>filebeat</program_name>
+</decoder>
+
+<decoder name="wazuh-spiderfoot-integration-syslog">
+  <program_name>wazuh-spiderfoot-integration</program_name>
+</decoder>
+
+<decoder name="wazuh-nwipe-integration-syslog">
+  <program_name>wazuh-nwipe-integration</program_name>
+</decoder>
+
+<decoder name="wazuh-restic-integration-syslog">
+  <program_name>wazuh-restic-integration</program_name>
+</decoder>
+
+<decoder name="wazuh-veracrypt-integration-syslog">
+  <program_name>wazuh-veracrypt-integration</program_name>
+</decoder>
+
+<!-- =========================
+ RADSECPROXY DECODERS
+========================= -->
+<decoder name="radsecproxy-parent">
+  <program_name>radsecproxy</program_name>
+</decoder>
+
+<decoder name="radsecproxy-parent">
+  <prematch>Access-Accept for user|Access-Reject for user|TLS handshake failed|timed out|status server response|createlistener</prematch>
+</decoder>
+
+
+<decoder name="radsecproxy-tlsfail">
+  <parent>radsecproxy-parent</parent>
+  <prematch>TLS handshake failed with</prematch>
+  <regex>TLS handshake failed with (\S+)</regex>
+  <order>dst_ip</order>
+</decoder>
+
+<decoder name="radsecproxy-timeout">
+  <parent>radsecproxy-parent</parent>
+  <prematch>Connecting to server</prematch>
+  <regex>Connecting to server (\S+) timed out</regex>
+  <order>dst_ip</order>
+</decoder>
+
+<decoder name="radsecproxy-status-ok">
+  <parent>radsecproxy-parent</parent>
+  <prematch>Received status server response from</prematch>
+  <regex>Received status server response from (\S+)</regex>
+  <order>dst_ip</order>
+</decoder>
+
+<decoder name="radsecproxy-status-ok-file">
+  <parent>radsecproxy-parent</parent>
+  <prematch>got status server response from</prematch>
+  <regex>got status server response from (\S+)</regex>
+  <order>dst_ip</order>
+</decoder>
+
+<decoder name="radsecproxy-access-accept">
+  <parent>radsecproxy-parent</parent>
+  <prematch>Access-Accept for user</prematch>
+  <regex type="pcre2">Access-Accept for user (\S+) from (\S+) to (\S+)</regex>
+  <order>username,radius_backend,dst_ip</order>
+</decoder>
+
+<decoder name="radsecproxy-access-reject">
+  <parent>radsecproxy-parent</parent>
+  <prematch>Access-Reject for user</prematch>
+  <regex type="pcre2">Access-Reject for user (\S+) from (\S+) to (\S+)</regex>
+  <order>username,radius_backend,dst_ip</order>
+</decoder>
+
+<!-- ========================================================
+ UFW DECODERS (SIBLING PATTERN - Kernel 6.14)
+ Autor: Bruno Flausino
+ Data: 2026-01-09
+======================================================== -->
+
+<decoder name="ufw-custom">
+  <parent>kernel</parent>
+  <type>firewall</type>
+  <use_own_name>true</use_own_name>
+  <prematch type="pcre2">\[UFW \w+\]</prematch>
+  <regex type="pcre2">\[UFW (\w+)\]</regex>
+  <order>action</order>
+</decoder>
+
+<decoder name="ufw-custom">
+  <parent>kernel</parent>
+  <regex type="pcre2">SRC=(\S+)</regex>
+  <order>srcip</order>
+</decoder>
+
+<decoder name="ufw-custom">
+  <parent>kernel</parent>
+  <regex type="pcre2">DST=(\S+)</regex>
+  <order>dstip</order>
+</decoder>
+
+<decoder name="ufw-custom">
+  <parent>kernel</parent>
+  <regex type="pcre2">SPT=(\d+)</regex>
+  <order>srcport</order>
+</decoder>
+
+<decoder name="ufw-custom">
+  <parent>kernel</parent>
+  <regex type="pcre2">DPT=(\d+)</regex>
+  <order>dstport</order>
+</decoder>
+
+<decoder name="ufw-custom">
+  <parent>kernel</parent>
+  <regex type="pcre2">PROTO=(\w+)</regex>
+  <order>protocol</order>
+</decoder>
+
+<decoder name="conpot-json-standalone">
+  <prematch type="pcre2">^\{"program_name":"conpot".*"log":"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3} New (?:http|modbus|s7comm|snmp|ftp|bacnet|enip|tftp|ipmi) (?:session|connection) from </prematch>
+  <regex type="pcre2">^\{"program_name":"conpot".*"log":"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) New (\w+) (?:session|connection) from (\d+\.\d+\.\d+\.\d+)(?::(\d+))? \(([^)]+)\)</regex>
+  <order>conpot.timestamp,conpot.protocol,srcip,srcport,conpot.session_id</order>
+</decoder>
+
+<decoder name="conpot-plain">
+  <use_own_name>true</use_own_name>
+  <prematch type="pcre2">^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3} New (?:http|modbus|s7comm|snmp|ftp|bacnet|enip|tftp|ipmi) (?:session|connection) from </prematch>
+  <regex type="pcre2">^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) New (\w+) (?:session|connection) from (\d+\.\d+\.\d+\.\d+)(?::(\d+))? \(([^)]+)\)</regex>
+  <order>conpot.timestamp,conpot.protocol,srcip,srcport,conpot.session_id</order>
+</decoder>
+
+<!-- =========================
+ VELOCIRAPTOR DECODERS
+========================= -->
+<decoder name="velociraptor">
+  <program_name>velociraptor</program_name>
+</decoder>
+
+<decoder name="velociraptor-json">
+  <parent>velociraptor</parent>
+  <plugin_decoder>JSON_Decoder</plugin_decoder>
+</decoder>

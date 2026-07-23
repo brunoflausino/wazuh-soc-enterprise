@@ -373,3 +373,19 @@ why.* Knowing when **not** to reach for a GNN is as much a part of the job as kn
   production, cross-environment deployment, or low-and-slow/distributed scans.
 - **Ethical/operational notes:** weak labels (Suricata oracle); recall capped (~63% @ 1% FPR);
   retrain with online structural features before any real deployment.
+
+---
+
+<sub>
+<b>Navigation</b> &nbsp;
+<a href="../../README.md">Portfolio home</a> &nbsp;&middot;&nbsp;
+<a href="README.md">ML Research</a> &nbsp;&middot;&nbsp;
+<a href="../README.md">All 22 integrations</a> &nbsp;&middot;&nbsp;
+<a href="../../detection-coverage/attack-coverage.md">Detection coverage</a> &nbsp;&middot;&nbsp;
+<a href="../../playbooks/README.md">SOC playbooks</a> &nbsp;&middot;&nbsp;
+<a href="../../METRICS.md">Metrics</a>
+<br><br>
+Validated in a single-workstation lab. Each guide records the versions it was validated
+against; see <a href="../../README.md#lab-status">lab status</a>.
+</sub>
+

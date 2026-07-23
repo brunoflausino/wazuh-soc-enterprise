@@ -6,8 +6,8 @@
 
 [![Wazuh](https://img.shields.io/badge/Wazuh-4.14.6-3B7DDD)](https://wazuh.com)
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20LTS-orange)](https://ubuntu.com)
-[![Rules](https://img.shields.io/badge/Custom%20Rules-188-success)](./METRICS.md)
-[![Decoders](https://img.shields.io/badge/Custom%20Decoders-51-success)](./METRICS.md)
+[![Rules](https://img.shields.io/badge/Custom%20Rules-209-success)](./METRICS.md)
+[![Decoders](https://img.shields.io/badge/Custom%20Decoders-49-success)](./METRICS.md)
 [![Documented Integrations](https://img.shields.io/badge/Documented%20Integrations-22-green)](./integrations)
 [![ATT&CK Coverage](https://img.shields.io/badge/ATT%26CK-coverage%20%2B%20gaps-red)](./detection-coverage/attack-coverage.md)
 [![Metrics](https://img.shields.io/badge/metrics-script%20verified-blueviolet)](./METRICS.md)
@@ -15,6 +15,9 @@
 **Hands-on detection engineering and SOC operations portfolio built on Wazuh SIEM/XDR** — log
 source integration, custom rule development, MITRE ATT&CK mapping, alert triage, incident
 investigation and response automation, on Ubuntu 24.04 bare metal.
+
+Every integration here was built, validated end-to-end and documented with evidence captured at
+the time. See [lab status](#lab-status) for what runs today.
 
 Maintained by **[Bruno Flausino](https://www.linkedin.com/in/brflausino/)**.
 
@@ -64,13 +67,29 @@ actions and findings.
 
 📄 **[Read INC-0001 →](incident-reports/2026-07-16-INC-0001-ssh-honeypot-compromise.md)**
 
+### Deep dives
+
+Beyond the three above, these guides carry the most engineering detail:
+
+- **[Velociraptor DFIR](integrations/incident-response/velociraptor-integration.md)** — endpoint forensics and live collection
+- **[Shuffle SOAR](integrations/incident-response/shuffle-integration.md)** — response automation and playbook orchestration
+- **[Auditd + MITRE rule pack](integrations/threat-intelligence/auditd-integration.md)** — 22 ATT&CK-mapped rules covering execution, persistence and privilege escalation
+- **[MISP](integrations/threat-intelligence/misp-integration.md)** — threat-intel platform integration and indicator correlation
+- **[Falco (eBPF)](integrations/threat-intelligence/falco-integration.md)** — kernel-level runtime detection
+- **[Zeek NSM](integrations/network-security/zeek-integration.md)** — network metadata and protocol analysis
+- **[Cowrie honeypot](integrations/threat-intelligence/cowrie-integration.md)** — the detection chain behind INC-0001
+- **[OpenVAS / GVM](integrations/vulnerability-scan/openvas-integration.md)** — vulnerability management pipeline
+
+All 22 integrations are listed [further down](#integrated-security-stack--22-documented) and in
+the [full catalog](./integrations).
+
 ---
 
 ## Capability evidence
 
 | Capability | Primary evidence |
 | --- | --- |
-| **SIEM engineering** | 188 custom rules, 51 decoders, 14 rule files — [`METRICS.md`](METRICS.md) |
+| **SIEM engineering** | 209 custom rules, 49 decoders, 16 rule files — [`METRICS.md`](METRICS.md) |
 | **Network detection** | [Suricata inline IPS](integrations/network-security/suricata-integration.md) + [Zeek NSM](integrations/network-security/zeek-integration.md) |
 | **Threat intelligence** | [Native OSINT CDB](integrations/threat-intelligence/osint-cdb-integration.md) + [MISP](integrations/threat-intelligence/misp-integration.md) + [SpiderFoot](integrations/threat-intelligence/spiderfoot-integration.md) |
 | **Alert triage & SOC process** | [L1 triage playbook](playbooks/L1-triage-playbook.md) + [escalation matrix](playbooks/escalation-matrix.md) |
@@ -111,20 +130,19 @@ successes tells a reviewer nothing about judgement.
 
 ## Integrated security stack — 22 documented
 
-Every tool below ships a markdown guide with configuration, validated `wazuh-logtest` output,
-DevTools queries and dashboard screenshots. This table lists **only** what is deployed **and**
-documented.
+Each tool links to its guide with configuration, validated `wazuh-logtest` output, DevTools
+queries and dashboard screenshots captured during validation.
 
 | Category | Tools |
 | --- | --- |
-| **Core SIEM** | Wazuh Manager, Indexer, Dashboard, Filebeat |
-| **Threat Intelligence & Detection** (8) | MISP, OSINT CDB, SpiderFoot, CALDERA, YARA, Falco (eBPF), Cowrie, Auditd |
-| **Network Security** (4) | Suricata, Zeek NSM, WireGuard, UFW |
-| **Data Protection** (4) | ClamAV, VeraCrypt, NWIPE, Restic |
-| **Incident Response & SOAR** (2) | Shuffle SOAR, Velociraptor |
-| **Authentication** (2) | FreeRADIUS, Radsecproxy |
-| **System Inventory** (1) | OSQuery |
-| **Vulnerability Management** (1) | OpenVAS / GVM |
+| **Core SIEM** | Wazuh Manager · Indexer · Dashboard · Filebeat |
+| **Threat Intelligence & Detection** (8) | [OSINT CDB](integrations/threat-intelligence/osint-cdb-integration.md) · [MISP](integrations/threat-intelligence/misp-integration.md) · [SpiderFoot](integrations/threat-intelligence/spiderfoot-integration.md) · [CALDERA](integrations/threat-intelligence/caldera-integration.md) · [YARA](integrations/threat-intelligence/yara-integration.md) · [Falco (eBPF)](integrations/threat-intelligence/falco-integration.md) · [Cowrie](integrations/threat-intelligence/cowrie-integration.md) · [Auditd](integrations/threat-intelligence/auditd-integration.md) |
+| **Network Security** (4) | [Suricata](integrations/network-security/suricata-integration.md) · [Zeek NSM](integrations/network-security/zeek-integration.md) · [WireGuard](integrations/network-security/wireguard-integration.md) · [UFW](integrations/network-security/ufw-integration.md) |
+| **Data Protection** (4) | [ClamAV](integrations/data-protection/clamav-integration.md) · [VeraCrypt](integrations/data-protection/veracrypt-integration.md) · [NWIPE](integrations/data-protection/nwipe-integration.md) · [Restic](integrations/data-protection/restic-integration.md) |
+| **Incident Response & SOAR** (2) | [Shuffle SOAR](integrations/incident-response/shuffle-integration.md) · [Velociraptor](integrations/incident-response/velociraptor-integration.md) |
+| **Authentication** (2) | [FreeRADIUS](integrations/authentication/freeradius-integration.md) · [Radsecproxy](integrations/authentication/radsecproxy-integration.md) |
+| **System Inventory** (1) | [OSQuery](integrations/system-inventory/osquery-integration.md) |
+| **Vulnerability Management** (1) | [OpenVAS / GVM](integrations/vulnerability-scan/openvas-integration.md) |
 
 📚 **[Browse the full catalog →](./integrations)** — including the roadmap of integrations
 deployed at the Wazuh layer whose guides are still pending, listed separately so the count above
@@ -173,16 +191,28 @@ security data leaves the lab.
 
 ---
 
-## Lab environment
+## Lab status
 
-Self-funded single-workstation lab: Ubuntu 24.04 LTS bare metal, Intel i9, 32 GB RAM,
+Single self-funded workstation: Ubuntu 24.04 LTS bare metal, Intel i9, 32 GB RAM,
 RTX 4070 SUPER 12 GB, one Suricata sensor.
 
-**What this environment cannot demonstrate**, stated plainly rather than left to inference:
-enterprise incident volume, multi-client operations, commercial SIEM/EDR platforms, Windows or
-cloud or identity telemetry, 24/7 shift operation under real SLA, and cross-environment
-validation. The playbooks and coverage assessment are written to production standards, but they
-have not been operated under production conditions.
+**Always on:** Wazuh manager, indexer and dashboard, with the full **209-rule / 49-decoder
+detection corpus loaded and active**. Suricata, UFW and ClamAV run continuously.
+
+**Brought up per project:** the remaining sensors — Zeek, Cowrie, Falco, Velociraptor, MISP,
+CALDERA, OSQuery, FreeRADIUS, OpenVAS and the rest — are deployed when worked on, validated,
+documented, then torn down. Running 22 tools concurrently needs a rack, not a desktop. Every
+guide records the date and version it was validated against, and configurations plus the rule
+corpus are retained so any integration can be restored.
+
+The host was rebuilt from scratch in July 2026. The detection corpus survived the rebuild
+intact — which is the point of the change-management discipline described throughout these
+guides.
+
+**What a single-workstation lab cannot demonstrate**, stated plainly: enterprise alert volume,
+multi-client operations, commercial SIEM/EDR platforms, Windows/cloud/identity telemetry, and
+24/7 shift operation under real SLA. The playbooks and coverage assessment are written to
+production standards but have not been operated under production conditions.
 
 Collaborations, dataset access and critical feedback are welcome.
 

@@ -1,0 +1,21 @@
+<group name="syscheck,yara,">
+
+  <rule id="100300" level="12">
+    <decoded_as>yara-match</decoded_as>
+    <description>YARA detection: $(yara.rule) on $(yara.target)</description>
+    <group>malware,</group>
+  </rule>
+
+  <rule id="100301" level="10">
+    <if_sid>550</if_sid>
+    <match>/tmp/malware_samples</match>
+    <description>YARA Trigger: File modified in malware_samples</description>
+  </rule>
+
+  <rule id="100302" level="10">
+    <if_sid>554</if_sid>
+    <match>/tmp/malware_samples</match>
+    <description>YARA Trigger: File added to malware_samples</description>
+  </rule>
+
+</group>

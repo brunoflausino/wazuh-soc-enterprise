@@ -1,0 +1,132 @@
+<group name="local,soc_rules,json_advanced,">
+
+    <!-- ========= GRR Rapid Response (DFIR/Threat Hunting) ========= -->
+    <rule id="120000" level="3">
+        <decoded_as>json</decoded_as>
+        <match>grr</match>
+        <description>GRR: Generic event.</description>
+        <group>grr_rapid_response,dfir,</group>
+    </rule>
+
+    <rule id="120001" level="6">
+        <if_sid>120000</if_sid>
+        <match>STARTED</match>
+        <description>GRR: New hunt started.</description>
+        <group>grr_rapid_response,dfir,threat_hunting,</group>
+    </rule>
+
+    <rule id="120002" level="5">
+        <if_sid>120000</if_sid>
+        <match>COMPLETED</match>
+        <description>GRR: Hunt completed.</description>
+        <group>grr_rapid_response,dfir,threat_hunting,</group>
+    </rule>
+
+    <rule id="120003" level="8">
+        <if_sid>120000</if_sid>
+        <match>PAUSED</match>
+        <description>GRR: Hunt paused. Manual intervention required.</description>
+        <group>grr_rapid_response,dfir,error,service_availability,</group>
+    </rule>
+
+    <!-- ========= SpiderFoot (OSINT) ========= -->
+    <rule id="120010" level="3">
+        <if_group>json</if_group>
+        <program_name>spiderfoot</program_name>
+        <match>Scan started</match>
+        <description>SpiderFoot: OSINT scan started.</description>
+        <group>spiderfoot,osint,reconnaissance,</group>
+    </rule>
+
+    <rule id="120011" level="5">
+        <if_group>json</if_group>
+        <program_name>spiderfoot</program_name>
+        <match>Scan completed</match>
+        <description>SpiderFoot: OSINT scan completed. Results are ready for review.</description>
+        <group>spiderfoot,osint,reconnaissance,</group>
+    </rule>
+
+    <!-- ========= Shuffle (SOAR Automation) ========= -->
+    <rule id="120020" level="4">
+        <if_group>json</if_group>
+        <program_name>shuffle</program_name>
+        <match>FINISHED</match>
+        <description>Shuffle: SOAR workflow executed successfully.</description>
+        <group>shuffle,soar,automation,</group>
+    </rule>
+
+    <rule id="120021" level="8">
+        <if_group>json</if_group>
+        <program_name>shuffle</program_name>
+        <match>FAILED</match>
+        <description>Shuffle: SOAR workflow failed. Manual intervention required.</description>
+        <group>shuffle,soar,automation,error,</group>
+    </rule>
+
+    <!-- ========= MISP (Threat Intelligence) ========= -->
+    <rule id="120030" level="5">
+        <if_group>json</if_group>
+        <program_name>misp</program_name>
+        <description>MISP: Threat intelligence event detected.</description>
+        <group>misp,threat_intel,ioc,</group>
+    </rule>
+
+    <!-- ========= IRIS (Incident Response) ========= -->
+    <rule id="120040" level="6">
+        <if_group>json</if_group>
+        <program_name>iriswebapp</program_name>
+        <match>case</match>
+        <description>IRIS: Incident response case activity.</description>
+        <group>iris,incident_response,case_management,</group>
+    </rule>
+
+    <!-- ========= CAPE Sandbox (Malware Analysis) ========= -->
+    <rule id="120050" level="10">
+        <if_group>json</if_group>
+        <program_name>cape-sandbox</program_name>
+        <match>malicious</match>
+        <description>CAPE: Malicious sample detected in sandbox.</description>
+        <group>cape,malware_analysis,sandbox,</group>
+    </rule>
+
+    <!-- ========= Zeek Network Monitoring ========= -->
+    <rule id="120060" level="3">
+        <if_group>json</if_group>
+        <program_name>zeek_conn</program_name>
+        <description>Zeek: Network connection logged.</description>
+        <group>zeek,network,connection,</group>
+        <options>no_full_log</options>
+    </rule>
+
+    <rule id="120061" level="4">
+        <if_group>json</if_group>
+        <program_name>zeek_dns</program_name>
+        <description>Zeek: DNS query logged.</description>
+        <group>zeek,network,dns,</group>
+        <options>no_full_log</options>
+    </rule>
+
+    <rule id="120062" level="5">
+        <if_group>json</if_group>
+        <program_name>zeek_ssl</program_name>
+        <description>Zeek: SSL/TLS connection logged.</description>
+        <group>zeek,network,ssl,tls,</group>
+        <options>no_full_log</options>
+    </rule>
+
+    <rule id="120063" level="4">
+        <if_group>json</if_group>
+        <program_name>zeek_http</program_name>
+        <description>Zeek: HTTP request logged.</description>
+        <group>zeek,network,http,</group>
+        <options>no_full_log</options>
+    </rule>
+
+    <rule id="120064" level="7">
+        <if_group>json</if_group>
+        <program_name>zeek_weird</program_name>
+        <description>Zeek: Anomalous network activity detected.</description>
+        <group>zeek,network,anomaly,</group>
+    </rule>
+
+</group>

@@ -1,0 +1,145 @@
+<!-- Velociraptor DFIR Integration Rules (100400-100419)
+     Architecture: child rules of catch-all JSON rule 100000
+     Log sources:
+       - /opt/velociraptor/server_artifacts/Server.Audit.Logs/*.json (audit events with "principal")
+       - /opt/velociraptor/logs/VelociraptorFrontend_info.log.* (frontend ops)
+       - /opt/velociraptor/logs/VelociraptorAudit_info.log.* (audit log files)
+       - /opt/velociraptor/logs/VelociraptorGUI_info.log (GUI API access with "user","method","url")
+-->
+<group name="velociraptor,">
+
+  <!-- ========== SERVER AUDIT LOG RULES (format: {"operation":"...","principal":"..."}) ========== -->
+
+  <rule id="100400" level="3">
+    <if_sid>100000</if_sid>
+    <match>"principal"</match>
+    <description>Velociraptor: Audit event — $(operation) by $(principal)</description>
+    <group>velociraptor,audit,</group>
+  </rule>
+
+  <rule id="100401" level="8">
+    <if_sid>100400</if_sid>
+    <match>Granting administrator role</match>
+    <description>Velociraptor: Administrator role granted — $(operation)</description>
+    <group>velociraptor,authentication,admin,</group>
+    <mitre><id>T1078</id></mitre>
+  </rule>
+
+  <rule id="100402" level="5">
+    <if_sid>100400</if_sid>
+    <match>Authenticated</match>
+    <description>Velociraptor: User $(principal) authenticated to GUI</description>
+    <group>velociraptor,authentication,login,</group>
+    <mitre><id>T1078</id></mitre>
+  </rule>
+
+  <rule id="100403" level="8">
+    <if_sid>100400</if_sid>
+    <match>CreateHunt</match>
+    <description>Velociraptor: Hunt created by $(principal)</description>
+    <group>velociraptor,hunt,</group>
+    <mitre><id>T1046</id></mitre>
+  </rule>
+
+  <rule id="100404" level="6">
+    <if_sid>100400</if_sid>
+    <match>CollectArtifact</match>
+    <description>Velociraptor: Artifact collection started by $(principal)</description>
+    <group>velociraptor,collection,</group>
+    <mitre><id>T1119</id></mitre>
+  </rule>
+
+  <rule id="100405" level="6">
+    <if_sid>100400</if_sid>
+    <match>notebook</match>
+    <description>Velociraptor: VQL query executed in notebook by $(principal)</description>
+    <group>velociraptor,query,</group>
+    <mitre><id>T1059</id></mitre>
+  </rule>
+
+  <rule id="100407" level="10">
+    <if_sid>100400</if_sid>
+    <match>Invalid password</match>
+    <description>Velociraptor: Failed authentication — $(principal)</description>
+    <group>velociraptor,authentication,failed,</group>
+    <mitre><id>T1110</id></mitre>
+  </rule>
+
+  <!-- ========== NATIVE LOG FILE RULES (format: {"level":"...","msg":"...","time":"..."}) ========== -->
+
+  <rule id="100410" level="3">
+    <if_sid>100000</if_sid>
+    <location>VelociraptorFrontend_info</location>
+    <description>Velociraptor: Frontend event — $(msg)</description>
+    <group>velociraptor,system,frontend,</group>
+  </rule>
+
+  <rule id="100411" level="3">
+    <if_sid>100000</if_sid>
+    <location>VelociraptorGUI_info</location>
+    <description>Velociraptor: GUI event — $(msg)</description>
+    <group>velociraptor,system,gui,</group>
+  </rule>
+
+  <rule id="100412" level="3">
+    <if_sid>100000</if_sid>
+    <location>VelociraptorAudit_info</location>
+    <description>Velociraptor: Audit log event — $(msg)</description>
+    <group>velociraptor,system,audit_log,</group>
+  </rule>
+
+  <rule id="100413" level="5">
+    <if_sid>100411</if_sid>
+    <match>Stopping GUI Server</match>
+    <description>Velociraptor: GUI Server stopped</description>
+    <group>velociraptor,service_stop,</group>
+  </rule>
+
+  <rule id="100414" level="3">
+    <if_sid>100411</if_sid>
+    <match>GUI is ready to handle</match>
+    <description>Velociraptor: GUI Server started</description>
+    <group>velociraptor,service_start,</group>
+  </rule>
+
+  <rule id="100415" level="5">
+    <if_sid>100410</if_sid>
+    <field name="level">^error$</field>
+    <description>Velociraptor: Frontend error — $(msg)</description>
+    <group>velociraptor,error,frontend,</group>
+  </rule>
+
+  <!-- ========== GUI API ACCESS RULES (format: {"method":"POST","url":"/api/v1/...","user":"admin"}) ========== -->
+
+  <rule id="100416" level="4">
+    <if_sid>100411</if_sid>
+    <match>"method"</match>
+    <description>Velociraptor: GUI API call $(method) $(url) by $(dstuser) from $(remote)</description>
+    <group>velociraptor,gui_api,</group>
+  </rule>
+
+  <rule id="100417" level="6">
+    <if_sid>100416</if_sid>
+    <match>CreateHunt</match>
+    <description>Velociraptor: Hunt created via GUI by $(dstuser)</description>
+    <group>velociraptor,hunt,gui_api,</group>
+    <mitre><id>T1046</id></mitre>
+  </rule>
+
+  <rule id="100418" level="6">
+    <if_sid>100416</if_sid>
+    <match>CollectArtifact</match>
+    <description>Velociraptor: Artifact collection via GUI by $(dstuser)</description>
+    <group>velociraptor,collection,gui_api,</group>
+    <mitre><id>T1119</id></mitre>
+  </rule>
+
+  <rule id="100419" level="5">
+    <if_sid>100416</if_sid>
+    <match>SetServerMonitoring</match>
+    <description>Velociraptor: Monitoring config changed via GUI by $(dstuser)</description>
+    <group>velociraptor,config_change,gui_api,</group>
+    <mitre><id>T1562</id></mitre>
+  </rule>
+
+</group>

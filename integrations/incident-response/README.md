@@ -1,30 +1,34 @@
 <!-- soc-banner -->
-<p align="center"><img src="assets/banners/banner-incident-response.svg" alt="incident-response — Wazuh SOC" width="100%"></p>
+<p align="center"><img src="assets/banners/banner-incident-response.svg" alt="Incident Response & SOAR -- Wazuh SOC" width="100%"></p>
 
-# Incident Response & Forensics Integrations
+# Incident Response & SOAR
 
-SIEM-integrated DFIR tooling for the Wazuh SOC Enterprise project. Each integration pipelines endpoint and forensic tool logs into Wazuh for real-time alerting, MITRE ATT&CK-mapped detection, and dashboard visualization.
+Forensic collection and response automation -- the layer that turns an alert into an action.
 
-## Tools Integrated
-
-### Velociraptor DFIR
-
-- **Status**: ✅ Integrated
-- **Documentation**: [velociraptor-integration.md](velociraptor-integration.md)
-- **Version**: v0.75.5 (standalone binary, self-signed SSL)
-- **Purpose**: Endpoint visibility, artifact collection, and hunt orchestration via VQL
-- **Wazuh Rules**: 100400–100419 (17 rules)
-- **MITRE ATT&CK**: T1078, T1046, T1119, T1059, T1110, T1562
-- **Dashboard**: 6 visualizations covering alert volume, rule distribution, MITRE coverage, severity, and principal activity
-
-## Planned
-
-The following tools are planned for future integration. Documentation and Wazuh rules will be added once each tool is deployed and validated on the host.
-
-- **DFIR-IRIS** — incident case management platform
-- **GRR Rapid Response** — remote live forensics
-- **Shuffle SOAR** — security orchestration, automation, and response
+**2 documented integrations** in this category.
+Each guide includes configuration, validated `wazuh-logtest` output, OpenSearch DevTools
+queries and dashboard screenshots captured during validation.
 
 ---
 
-*Part of the [Wazuh SOC Enterprise](https://github.com/brunoflausino/wazuh-soc-enterprise) portfolio project.*
+## Integrations
+
+| Integration | What it detects | Rules | ID range | MITRE ATT&CK |
+| --- | --- | :---: | --- | --- |
+| **[Velociraptor DFIR](velociraptor-integration.md)** | Endpoint forensics, live collection and server audit trail; chained decoders resolve generic-JSON conflicts | 17 | `100400-100419` | T1021.004, T1046, T1059, T1070.004 |
+| **[Shuffle SOAR](shuffle-integration.md)** | Workflow orchestration, alert enrichment and automated response paths | -- | `workflow` | T1548.001 |
+
+`--` indicates the integration relies on native Wazuh decoders or operates outside the custom
+rule ID space. Rule counts reflect what each guide documents; the authoritative corpus totals
+live in [`METRICS.md`](../../METRICS.md) and are verified by
+[`verify-metrics.sh`](../../scripts/verify-metrics.sh).
+
+---
+
+## Navigation
+
+[**Portfolio home**](../../README.md) ·
+[All integrations](../README.md) ·
+[Detection coverage](../../detection-coverage/attack-coverage.md) ·
+[SOC playbooks](../../playbooks/README.md) ·
+[Incident reports](../../incident-reports/README.md)

@@ -47,16 +47,29 @@ top open item in the roadmap.
 
 | Metric | Value | Attestation |
 | --- | ---: | --- |
-| Custom rules authored | **188** | `grep -c '<rule id' /var/ossec/etc/rules/*.xml` on the live manager |
-| Custom decoders authored | **51** | `grep -c '<decoder name' /var/ossec/etc/decoders/*.xml` |
-| Active rule files | **14** | `/var/ossec/etc/rules/` |
+| Custom rules authored | **209** | `grep -c '<rule id' /var/ossec/etc/rules/*.xml` on the live manager |
+| Custom decoders authored | **49** | `grep -c '<decoder name' /var/ossec/etc/decoders/*.xml` |
+| Active rule files | **16** | `/var/ossec/etc/rules/` |
 | Rule ID range | `100049 – 120064` | — |
 
-> **Historical note.** Earlier revisions of this portfolio and of the author's CV quoted
-> **178 rules / 20 integrations**. Those figures were correct at the time. The current figures
-> are 188 and 22. Any external document still quoting the older numbers is out of date, not in
-> conflict. This note exists so a reviewer comparing documents does not read growth as
-> inconsistency.
+> **Historical note.** Earlier revisions of this portfolio, the CV and LinkedIn quoted
+> **178**, **182** and **188** rules, and 20 integrations. Those figures were hand-maintained
+> and drifted. The 2026-07-23 export from the live manager gives the authoritative count:
+> **209 rules, 49 decoders, 16 rule files, 22 integrations**. Note the decoder figure went
+> *down* — 51 was an overcount. Correcting downward matters more than correcting upward.
+
+## 2b. Deployment state
+
+The detection corpus is loaded and active on the manager at all times. The tools that feed it
+are brought up per project rather than run concurrently — a single workstation cannot host 22
+services at once.
+
+| State | Components |
+| --- | --- |
+| Continuously running | Wazuh manager / indexer / dashboard, Suricata, UFW, ClamAV |
+| Brought up per project | Zeek, Cowrie, Falco, Velociraptor, MISP, CALDERA, OSQuery, FreeRADIUS, Radsecproxy, OpenVAS, SpiderFoot, YARA, WireGuard, Restic, NWIPE, VeraCrypt, Shuffle, Auditd |
+
+Host rebuilt from scratch July 2026; rule corpus and configurations retained and restored.
 
 ---
 

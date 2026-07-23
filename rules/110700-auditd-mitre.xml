@@ -1,0 +1,195 @@
+<!-- ============================================================
+     Auditd MITRE ATT&CK Custom Rules — wazuh-soc-enterprise
+     Rule IDs: 110700-110724
+     Host: flausino | Ubuntu 24.04 LTS
+     Maintainer: Bruno Flausino
+     ============================================================ -->
+
+<group name="audit,auditd_mitre,">
+
+  <!-- ── T1059 — Command and Scripting Interpreter ─────────── -->
+  <rule id="110700" level="6">
+    <if_sid>80792</if_sid>
+    <field name="audit.key">T1059_exec_user</field>
+    <description>MITRE T1059: Command execution by non-root user: $(audit.exe)</description>
+    <mitre><id>T1059</id></mitre>
+    <group>T1059,audit_command,</group>
+  </rule>
+
+  <rule id="110701" level="10">
+    <if_sid>80792</if_sid>
+    <field name="audit.key">T1059_exec_root</field>
+    <description>MITRE T1059: Command execution as root: $(audit.exe)</description>
+    <mitre><id>T1059</id></mitre>
+    <group>T1059,audit_command,</group>
+  </rule>
+
+  <rule id="110702" level="6">
+    <if_sid>80792</if_sid>
+    <field name="audit.key">T1059_exec_32bit</field>
+    <description>MITRE T1059: 32-bit command execution (possible evasion): $(audit.exe)</description>
+    <mitre><id>T1059</id></mitre>
+    <group>T1059,audit_command,</group>
+  </rule>
+
+  <!-- ── T1055 — Process Injection ────────────────────────── -->
+  <rule id="110703" level="14">
+    <if_sid>80792</if_sid>
+    <field name="audit.key">T1055_ptrace_attach</field>
+    <description>MITRE T1055: ptrace ATTACH detected — possible process injection by $(audit.exe)</description>
+    <mitre><id>T1055</id></mitre>
+    <group>T1055,audit_command,</group>
+  </rule>
+
+  <rule id="110704" level="14">
+    <if_sid>80792</if_sid>
+    <field name="audit.key">T1055_ptrace_pokedata</field>
+    <description>MITRE T1055: ptrace POKEDATA detected — memory write by $(audit.exe)</description>
+    <mitre><id>T1055</id></mitre>
+    <group>T1055,audit_command,</group>
+  </rule>
+
+  <!-- ── T1548 — SUID/SGID Abuse ──────────────────────────── -->
+  <rule id="110705" level="12">
+    <if_sid>80792</if_sid>
+    <field name="audit.key">T1548_setuid</field>
+    <description>MITRE T1548.001: setuid/setgid syscall by $(audit.exe) — possible privilege escalation</description>
+    <mitre><id>T1548.001</id></mitre>
+    <group>T1548,audit_command,</group>
+  </rule>
+
+  <rule id="110706" level="10">
+    <if_sid>80792</if_sid>
+    <field name="audit.key">T1548_chmod_suid</field>
+    <description>MITRE T1548.001: chmod SUID/SGID by user $(audit.auid) on $(audit.exe)</description>
+    <mitre><id>T1548.001</id></mitre>
+    <group>T1548,audit_command,</group>
+  </rule>
+
+  <!-- ── T1078 — Valid Accounts ───────────────────────────── -->
+  <rule id="110707" level="6">
+    <if_sid>80789</if_sid>
+    <field name="audit.key">T1078_su_exec</field>
+    <description>MITRE T1078: su executed by $(audit.auid)</description>
+    <mitre><id>T1078</id></mitre>
+    <group>T1078,audit_watch_execute,</group>
+  </rule>
+
+  <rule id="110708" level="6">
+    <if_sid>80789</if_sid>
+    <field name="audit.key">T1078_sudo_exec</field>
+    <description>MITRE T1078: sudo executed by $(audit.auid)</description>
+    <mitre><id>T1078</id></mitre>
+    <group>T1078,audit_watch_execute,</group>
+  </rule>
+
+  <rule id="110709" level="8">
+    <if_sid>80780</if_sid>
+    <field name="audit.key">T1078_sudoers_mod</field>
+    <description>MITRE T1078: sudoers file modified by $(audit.auid)</description>
+    <mitre><id>T1078</id></mitre>
+    <group>T1078,audit_watch_write,</group>
+  </rule>
+
+  <!-- ── T1083 — File and Directory Discovery ─────────────── -->
+  <rule id="110710" level="6">
+    <if_sid>80783</if_sid>
+    <field name="audit.key">T1083_passwd_access</field>
+    <description>MITRE T1083: /etc/passwd accessed by $(audit.auid) via $(audit.exe)</description>
+    <mitre><id>T1083</id></mitre>
+    <group>T1083,audit_watch_read,</group>
+  </rule>
+
+  <rule id="110711" level="10">
+    <if_sid>80783</if_sid>
+    <field name="audit.key">T1083_shadow_access</field>
+    <description>MITRE T1083: /etc/shadow accessed by $(audit.auid) via $(audit.exe)</description>
+    <mitre><id>T1083</id></mitre>
+    <group>T1083,audit_watch_read,</group>
+  </rule>
+
+  <rule id="110712" level="6">
+    <if_sid>80783</if_sid>
+    <field name="audit.key">T1083_group_access</field>
+    <description>MITRE T1083: /etc/group accessed by $(audit.auid) via $(audit.exe)</description>
+    <mitre><id>T1083</id></mitre>
+    <group>T1083,audit_watch_read,</group>
+  </rule>
+
+  <rule id="110713" level="10">
+    <if_sid>80783</if_sid>
+    <field name="audit.key">T1083_root_ssh</field>
+    <description>MITRE T1083: /root/.ssh accessed by $(audit.auid) via $(audit.exe)</description>
+    <mitre><id>T1083</id></mitre>
+    <group>T1083,audit_watch_read,</group>
+  </rule>
+
+  <!-- ── T1070 — Log/File Deletion / Timestomping ─────────── -->
+  <rule id="110714" level="10">
+    <if_sid>80792</if_sid>
+    <field name="audit.key">T1070_file_deletion</field>
+    <description>MITRE T1070.006: File deletion/rename by user $(audit.auid) via $(audit.exe)</description>
+    <mitre><id>T1070.006</id></mitre>
+    <group>T1070,audit_command,</group>
+  </rule>
+
+  <rule id="110715" level="14">
+    <if_sid>80780</if_sid>
+    <field name="audit.key">T1070_audit_log_tamper</field>
+    <description>MITRE T1070: Audit log directory tampered by $(audit.auid) via $(audit.exe)</description>
+    <mitre><id>T1070</id></mitre>
+    <group>T1070,audit_watch_write,</group>
+  </rule>
+
+  <rule id="110716" level="14">
+    <if_sid>80780</if_sid>
+    <field name="audit.key">T1070_wazuh_log_tamper</field>
+    <description>MITRE T1070: Wazuh log directory tampered by $(audit.auid) via $(audit.exe)</description>
+    <mitre><id>T1070</id></mitre>
+    <group>T1070,audit_watch_write,</group>
+  </rule>
+
+  <!-- ── T1021 — Remote Services ──────────────────────────── -->
+  <rule id="110717" level="6">
+    <if_sid>80792</if_sid>
+    <field name="audit.key">T1021_remote_connect</field>
+    <description>MITRE T1021: Outbound connect syscall by user $(audit.auid) via $(audit.exe)</description>
+    <mitre><id>T1021</id></mitre>
+    <group>T1021,audit_command,</group>
+  </rule>
+
+  <!-- ── T1136 — Create Account ───────────────────────────── -->
+  <rule id="110718" level="10">
+    <if_sid>80789</if_sid>
+    <field name="audit.key">T1136_useradd</field>
+    <description>MITRE T1136: useradd executed by $(audit.auid)</description>
+    <mitre><id>T1136</id></mitre>
+    <group>T1136,audit_watch_execute,</group>
+  </rule>
+
+  <rule id="110719" level="8">
+    <if_sid>80789</if_sid>
+    <field name="audit.key">T1136_usermod</field>
+    <description>MITRE T1136: usermod executed by $(audit.auid)</description>
+    <mitre><id>T1136</id></mitre>
+    <group>T1136,audit_watch_execute,</group>
+  </rule>
+
+  <rule id="110720" level="10">
+    <if_sid>80789</if_sid>
+    <field name="audit.key">T1136_userdel</field>
+    <description>MITRE T1136: userdel executed by $(audit.auid)</description>
+    <mitre><id>T1136</id></mitre>
+    <group>T1136,audit_watch_execute,</group>
+  </rule>
+
+  <!-- ── T1543 — Systemd Persistence ─────────────────────── -->
+  <rule id="110721" level="10">
+    <if_sid>80780</if_sid>
+    <field name="audit.key">T1543_systemd_persist</field>
+    <description>MITRE T1543: systemd unit file modified by $(audit.auid) via $(audit.exe)</description>
+    <mitre><id>T1543</id></mitre>
+    <group>T1543,audit_watch_write,</group>
+  </rule>
+
+</group>

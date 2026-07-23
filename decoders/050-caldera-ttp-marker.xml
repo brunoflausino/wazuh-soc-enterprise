@@ -1,0 +1,6 @@
+<decoder name="caldera-ttp-marker">
+  <program_name>caldera</program_name>
+  <prematch>CALDERA_TTP</prematch>
+  <regex>CALDERA_TTP technique_id=(\S+) operation=(\S+) ability=(\S+) agent=(\S+) status=(\S+)</regex>
+  <order>caldera.technique_id, caldera.operation, caldera.ability, caldera.agent, caldera.status</order>
+</decoder>

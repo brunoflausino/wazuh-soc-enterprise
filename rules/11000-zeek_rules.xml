@@ -1,0 +1,59 @@
+<group name="zeek,network_monitoring,">
+
+  <!-- Regra base: qualquer log Zeek (decoder zeek faz prematch em {"_path":") -->
+  <rule id="100000" level="0" noalert="1">
+    <decoded_as>json</decoded_as>
+    <field name="zeek">^true$</field>
+    <description>Zeek log detected</description>
+  </rule>
+
+  <rule id="100001" level="3">
+    <if_sid>100000</if_sid>
+    <field name="zeek_log_type">CONN</field>
+    <description>Zeek: Network connection $(id_orig_h):$(id_orig_p) -> $(id_resp_h):$(id_resp_p) [$(proto)]</description>
+    <group>network_connection,network_traffic,</group>
+  </rule>
+
+  <rule id="100002" level="5">
+    <if_sid>100000</if_sid>
+    <field name="zeek_log_type">DNS</field>
+    <description>Zeek: DNS Query - $(query) [$(qtype_name)]</description>
+    <group>dns_query,network_traffic,</group>
+  </rule>
+
+  <rule id="100003" level="5">
+    <if_sid>100000</if_sid>
+    <field name="zeek_log_type">HTTP</field>
+    <description>Zeek: HTTP $(method) $(host)$(uri) [Status: $(status_code)]</description>
+    <group>web_access,network_traffic,</group>
+  </rule>
+
+  <rule id="100004" level="5">
+    <if_sid>100000</if_sid>
+    <field name="zeek_log_type">SSL</field>
+    <description>Zeek: SSL/TLS connection to $(server_name) [$(version)]</description>
+    <group>ssl_connection,network_traffic,</group>
+  </rule>
+
+  <rule id="100005" level="5">
+    <if_sid>100000</if_sid>
+    <field name="zeek_log_type">FILES</field>
+    <description>Zeek: File transfer detected - $(mime_type) from $(id_orig_h)</description>
+    <group>file_transfer,network_traffic,</group>
+  </rule>
+
+  <rule id="100006" level="7">
+    <if_sid>100000</if_sid>
+    <field name="zeek_log_type">NOTICE</field>
+    <description>Zeek: Security Notice - $(note): $(msg)</description>
+    <group>ids_alert,network_traffic,security_event,</group>
+  </rule>
+
+  <rule id="100007" level="4">
+    <if_sid>100000</if_sid>
+    <field name="zeek_log_type">WEIRD</field>
+    <description>Zeek: Weird activity - $(name) from $(id_orig_h)</description>
+    <group>anomaly_detection,network_traffic,</group>
+  </rule>
+
+</group>

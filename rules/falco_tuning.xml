@@ -1,0 +1,71 @@
+<!--
+  falco_tuning.xml
+  Suppresses Falco "Sensitive file opened" 100603 from known-good processes.
+  IDs 100660-100668 (faixa livre confirmada 2026-06-28).
+  Real attackers reading /etc/shadow will NOT be wazuh-modulesd or sshd.
+-->
+<group name="falco_tuning,">
+
+  <!-- Wazuh FIM / SCA reading sensitive files (self-monitoring) -->
+  <rule id="100660" level="0">
+    <if_sid>100603</if_sid>
+    <field name="output_fields.proc.name">wazuh-modulesd</field>
+    <description>Tuning: Falco suppressed - wazuh-modulesd (FIM/SCA scan)</description>
+  </rule>
+
+  <rule id="100661" level="0">
+    <if_sid>100603</if_sid>
+    <field name="output_fields.proc.name">wazuh-syscheckd</field>
+    <description>Tuning: Falco suppressed - wazuh-syscheckd (FIM scan)</description>
+  </rule>
+
+  <!-- sshd reading PAM/auth configs during login -->
+  <rule id="100662" level="0">
+    <if_sid>100603</if_sid>
+    <field name="output_fields.proc.name">sshd</field>
+    <description>Tuning: Falco suppressed - sshd authentication</description>
+  </rule>
+
+  <!-- sudo invocation reads sudoers (every time) -->
+  <rule id="100663" level="0">
+    <if_sid>100603</if_sid>
+    <field name="output_fields.proc.name">sudo</field>
+    <description>Tuning: Falco suppressed - sudo authorization check</description>
+  </rule>
+
+  <!-- PAM helper unix_chkpwd reads /etc/shadow (legitimate auth) -->
+  <rule id="100664" level="0">
+    <if_sid>100603</if_sid>
+    <field name="output_fields.proc.name">unix_chkpwd</field>
+    <description>Tuning: Falco suppressed - unix_chkpwd PAM helper</description>
+  </rule>
+
+  <!-- Local auth utilities -->
+  <rule id="100665" level="0">
+    <if_sid>100603</if_sid>
+    <field name="output_fields.proc.name" type="pcre2">^(systemd-logind|login|passwd|chage|chpasswd|gpasswd|newgrp|su)$</field>
+    <description>Tuning: Falco suppressed - system auth utility</description>
+  </rule>
+
+  <!-- Scheduled job auth -->
+  <rule id="100666" level="0">
+    <if_sid>100603</if_sid>
+    <field name="output_fields.proc.name" type="pcre2">^(cron|CRON|atd|crond)$</field>
+    <description>Tuning: Falco suppressed - scheduled job PAM auth</description>
+  </rule>
+
+  <!-- OpenVAS scanner sudoers entry (legitimate) -->
+  <rule id="100667" level="0">
+    <if_sid>100603</if_sid>
+    <field name="output_fields.fd.name">/etc/sudoers.d/ospd-openvas</field>
+    <description>Tuning: Falco suppressed - OpenVAS sudoers entry</description>
+  </rule>
+
+  <!-- pkexec/polkit auth helpers -->
+  <rule id="100668" level="0">
+    <if_sid>100603</if_sid>
+    <field name="output_fields.proc.name" type="pcre2">^(pkexec|polkitd|polkit-agent-helper-1)$</field>
+    <description>Tuning: Falco suppressed - polkit auth helper</description>
+  </rule>
+
+</group>

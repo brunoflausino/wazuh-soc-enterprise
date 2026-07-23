@@ -1,0 +1,9 @@
+<decoder name="yara-match">
+  <program_name>yara_scan</program_name>
+</decoder>
+
+<decoder name="yara-match">
+  <parent>yara-match</parent>
+  <regex>YARA_MATCH rule=(\S+) target=(\S+) match="(\.+)"</regex>
+  <order>yara.rule,yara.target,yara.match</order>
+</decoder>

@@ -709,3 +709,19 @@ sudo grep '110103' /var/ossec/logs/alerts/alerts.json | grep 'localfreeradius' |
 ---
 
 *Validated: 2026-04-04 | Ubuntu 24.04 LTS | Wazuh v4.14.4 | Radsecproxy 1.10.0 | FreeRADIUS 3.2.5 (upstream backend)*
+
+---
+
+<sub>
+<b>Navigation</b> &nbsp;
+<a href="../../README.md">Portfolio home</a> &nbsp;&middot;&nbsp;
+<a href="README.md">Authentication</a> &nbsp;&middot;&nbsp;
+<a href="../README.md">All 22 integrations</a> &nbsp;&middot;&nbsp;
+<a href="../../detection-coverage/attack-coverage.md">Detection coverage</a> &nbsp;&middot;&nbsp;
+<a href="../../playbooks/README.md">SOC playbooks</a> &nbsp;&middot;&nbsp;
+<a href="../../METRICS.md">Metrics</a>
+<br><br>
+Validated in a single-workstation lab. Each guide records the versions it was validated
+against; see <a href="../../README.md#lab-status">lab status</a>.
+</sub>
+

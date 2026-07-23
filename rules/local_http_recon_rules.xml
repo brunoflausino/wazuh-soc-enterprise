@@ -1,0 +1,32 @@
+<group name="web,recon,opensearch_dashboard,lab_validation,">
+
+  <rule id="120200" level="5">
+    <program_name>opensearch-dashboards</program_name>
+    <match>HTTPDeep/</match>
+    <description>HTTP reconnaissance user-agent observed against OpenSearch Dashboards</description>
+    <group>web,recon,opensearch_dashboard,lab_validation,</group>
+    <mitre>
+      <id>T1595</id>
+    </mitre>
+  </rule>
+
+  <rule id="120201" level="7">
+    <if_sid>120200</if_sid>
+    <regex type="pcre2">/\.env|/\.git/config|/wp-login\.php|/phpmyadmin|/server-status|/etc/passwd</regex>
+    <description>Suspicious HTTP reconnaissance path requested against OpenSearch Dashboards</description>
+    <group>web,recon,suspicious_path,opensearch_dashboard,lab_validation,</group>
+    <mitre>
+      <id>T1595.002</id>
+    </mitre>
+  </rule>
+
+  <rule id="120202" level="15" frequency="4" timeframe="60">
+    <if_matched_group>suspicious_path</if_matched_group>
+    <description>Multiple suspicious HTTP reconnaissance paths observed against OpenSearch Dashboards</description>
+    <group>web,recon,scan_behavior,opensearch_dashboard,suspicious_path,soar_trigger,lab_validation,</group>
+    <mitre>
+      <id>T1595.002</id>
+    </mitre>
+  </rule>
+
+</group>

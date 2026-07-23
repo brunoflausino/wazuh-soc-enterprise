@@ -1,0 +1,27 @@
+name: Verify portfolio metrics
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  metrics:
+    name: Metric and hygiene consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Recount metrics and check every document agrees
+        run: |
+          chmod +x scripts/verify-metrics.sh
+          ./scripts/verify-metrics.sh
+
+      - name: Fail on scratch files
+        run: |
+          if find . -path ./.git -prune -o -type f \
+               \( -iname '*teste*' -o -iname '*.bak' -o -iname '*~' \) -print | grep -q .; then
+            echo "::error::Scratch or backup files committed."
+            exit 1
+          fi

@@ -1,22 +1,61 @@
 <group name="caldera,adversary_emulation,">
 
+  <!-- Base grouping rule: matches any event decoded by caldera-ttp-marker.
+       noalert=1 so it never fires on its own; child rules chain off it. -->
   <rule id="110500" level="0" noalert="1">
     <decoded_as>caldera-ttp-marker</decoded_as>
     <description>CALDERA marker grouping</description>
   </rule>
 
+  <!-- Generic catch-all: any CALDERA technique with no specific rule yet.
+       A shrinking share of this rule vs. the specific ones below is the
+       coverage metric shown in the Detection Rule Distribution dashboard. -->
   <rule id="110501" level="8">
     <if_sid>110500</if_sid>
     <description>CALDERA TTP marker: technique=$(caldera.technique_id) op=$(caldera.operation) ability=$(caldera.ability) agent=$(caldera.agent) status=$(caldera.status)</description>
     <group>caldera,mitre_attack,adversary_emulation,</group>
   </rule>
 
+  <!-- Technique-specific rules. Each maps one ATT&CK technique_id to a
+       dedicated rule carrying the <mitre> tag, so alerts surface the
+       exact tactic/technique in Wazuh instead of the generic marker. -->
+
   <rule id="110502" level="10">
     <if_sid>110500</if_sid>
     <field name="caldera.technique_id">^T1082$</field>
-    <description>CALDERA T1082 marker detected: op=$(caldera.operation) ability=$(caldera.ability) agent=$(caldera.agent) status=$(caldera.status)</description>
+    <description>CALDERA T1082 System Information Discovery: op=$(caldera.operation) ability=$(caldera.ability) agent=$(caldera.agent) status=$(caldera.status)</description>
     <mitre>
       <id>T1082</id>
+    </mitre>
+    <group>caldera,mitre_attack,discovery,</group>
+  </rule>
+
+  <rule id="110503" level="10">
+    <if_sid>110500</if_sid>
+    <field name="caldera.technique_id">^T1033$</field>
+    <description>CALDERA T1033 System Owner/User Discovery: op=$(caldera.operation) ability=$(caldera.ability) agent=$(caldera.agent) status=$(caldera.status)</description>
+    <mitre>
+      <id>T1033</id>
+    </mitre>
+    <group>caldera,mitre_attack,discovery,</group>
+  </rule>
+
+  <rule id="110504" level="10">
+    <if_sid>110500</if_sid>
+    <field name="caldera.technique_id">^T1057$</field>
+    <description>CALDERA T1057 Process Discovery: op=$(caldera.operation) ability=$(caldera.ability) agent=$(caldera.agent) status=$(caldera.status)</description>
+    <mitre>
+      <id>T1057</id>
+    </mitre>
+    <group>caldera,mitre_attack,discovery,</group>
+  </rule>
+
+  <rule id="110505" level="10">
+    <if_sid>110500</if_sid>
+    <field name="caldera.technique_id">^T1087\.001$</field>
+    <description>CALDERA T1087.001 Account Discovery Local Account: op=$(caldera.operation) ability=$(caldera.ability) agent=$(caldera.agent) status=$(caldera.status)</description>
+    <mitre>
+      <id>T1087.001</id>
     </mitre>
     <group>caldera,mitre_attack,discovery,</group>
   </rule>

@@ -1,0 +1,18 @@
+[Unit]
+Description=Caldera event-log shipper to Wazuh
+After=caldera.service
+Requires=caldera.service
+
+[Service]
+Type=simple
+User=REPLACE_WITH_YOUR_USER
+Environment=CALDERA_URL=http://127.0.0.1:8888
+Environment=CALDERA_API_KEY=REPLACE_WITH_api_key_red
+Environment=CALDERA_STATE=/opt/caldera-wazuh/state.json
+Environment=CALDERA_INTERVAL=30
+ExecStart=/usr/bin/python3 /opt/caldera-wazuh/caldera_shipper.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

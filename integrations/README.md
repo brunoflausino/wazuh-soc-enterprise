@@ -9,7 +9,7 @@ which run continuously and which are brought up per project.
 All counts on this page are verified by [`scripts/verify-metrics.sh`](../scripts/verify-metrics.sh)
 against [`METRICS.md`](../METRICS.md). Do not edit them by hand.
 
-## Documented Integrations (22)
+## Documented Integrations (23)
 
 ### 🎯 [Threat Intelligence & Detection](threat-intelligence/) — 8
 - [OSINT CDB threat-intelligence correlation](threat-intelligence/osint-cdb-integration.md) — native Wazuh CDB list, bidirectional `srcip`/`dstip` matching
@@ -21,11 +21,12 @@ against [`METRICS.md`](../METRICS.md). Do not edit them by hand.
 - [Cowrie Honeypot](threat-intelligence/cowrie-integration.md)
 - [Auditd](threat-intelligence/auditd-integration.md)
 
-### 🔒 [Network Security](network-security/) — 4
+### 🔒 [Network Security](network-security/) — 5
 - [Suricata IDS/IPS](network-security/suricata-integration.md) — inline IPS via NFQUEUE queue 3
 - [Zeek Network Monitor](network-security/zeek-integration.md)
 - [WireGuard VPN](network-security/wireguard-integration.md)
 - [UFW Firewall](network-security/ufw-integration.md)
+- [Fail2ban Intrusion Prevention](network-security/fail2ban-integration.md) — custom decoders, rules `100800–100803`, brute-force correlation
 
 ### 💾 [Data Protection](data-protection/) — 4
 - [ClamAV Antivirus](data-protection/clamav-integration.md)
@@ -54,13 +55,13 @@ against [`METRICS.md`](../METRICS.md). Do not edit them by hand.
 | Category | Documented tools | Status |
 |----------|:----------------:|--------|
 | Threat Intelligence & Detection | 8 | ✅ Complete |
-| Network Security | 4 | ✅ Complete |
+| Network Security | 5 | ✅ Complete |
 | Data Protection | 4 | ✅ Complete |
 | Incident Response & SOAR | 2 | ✅ Complete |
 | Authentication | 2 | ✅ Complete |
 | System Inventory | 1 | ✅ Complete |
 | Vulnerability Management | 1 | ✅ Complete |
-| **TOTAL** | **22** | **Documented & validated** |
+| **TOTAL** | **23** | **Documented & validated** |
 
 ---
 

@@ -6,7 +6,7 @@
 Perimeter and network-layer detection: inline prevention, protocol metadata, encrypted
 tunnelling and host firewall telemetry.
 
-**4 documented integrations** in this category.
+**5 documented integrations** in this category.
 Each guide includes configuration, validated `wazuh-logtest` output, OpenSearch DevTools
 queries and dashboard screenshots captured during validation.
 
@@ -20,6 +20,7 @@ queries and dashboard screenshots captured during validation.
 | **[Zeek NSM](zeek-integration.md)** | Protocol metadata across 7 log streams: CONN, DNS, HTTP, SSL, FILES, NOTICE, WEIRD | -- | `native` | T1021, T1018, T1573 |
 | **[WireGuard](wireguard-integration.md)** | VPN tunnel establishment, peer handshakes and session anomalies | 12 | `100200-100222` | -- |
 | **[UFW](ufw-integration.md)** | Host firewall drops, blocked ports and source-IP patterns | 9 | `100100-100108` | T1046, T1110, T1499 |
+| **[Fail2ban](fail2ban-integration.md)** | SSH intrusion prevention: ban/unban events and persistent-attacker correlation | 4 | `100800-100803` | T1110 |
 
 `--` indicates the integration relies on native Wazuh decoders or operates outside the custom
 rule ID space. Rule counts reflect what each guide documents; the authoritative corpus totals

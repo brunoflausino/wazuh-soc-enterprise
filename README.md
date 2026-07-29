@@ -6,9 +6,9 @@
 
 [![Wazuh](https://img.shields.io/badge/Wazuh-4.14.6-3B7DDD)](https://wazuh.com)
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20LTS-orange)](https://ubuntu.com)
-[![Rules](https://img.shields.io/badge/Custom%20Rules-209-success)](./METRICS.md)
+[![Rules](https://img.shields.io/badge/Custom%20Rules-212-success)](./METRICS.md)
 [![Decoders](https://img.shields.io/badge/Custom%20Decoders-49-success)](./METRICS.md)
-[![Documented Integrations](https://img.shields.io/badge/Documented%20Integrations-22-green)](./integrations)
+[![Documented Integrations](https://img.shields.io/badge/Documented%20Integrations-23-green)](./integrations)
 [![ATT&CK Coverage](https://img.shields.io/badge/ATT%26CK-coverage%20%2B%20gaps-red)](./detection-coverage/attack-coverage.md)
 [![Metrics](https://img.shields.io/badge/metrics-script%20verified-blueviolet)](./METRICS.md)
 
@@ -80,7 +80,7 @@ Beyond the three above, these guides carry the most engineering detail:
 - **[Cowrie honeypot](integrations/threat-intelligence/cowrie-integration.md)** — the detection chain behind INC-0001
 - **[OpenVAS / GVM](integrations/vulnerability-scan/openvas-integration.md)** — vulnerability management pipeline
 
-All 22 integrations are listed [further down](#integrated-security-stack--22-documented) and in
+All 23 integrations are listed [further down](#integrated-security-stack--22-documented) and in
 the [full catalog](./integrations).
 
 ---
@@ -89,7 +89,7 @@ the [full catalog](./integrations).
 
 | Capability | Primary evidence |
 | --- | --- |
-| **SIEM engineering** | 209 custom rules, 49 decoders, 16 rule files — [`METRICS.md`](METRICS.md) |
+| **SIEM engineering** | 212 custom rules (repo) / 216 (live manager), 49 / 51 decoders, 16 / 17 rule files — [`METRICS.md`](METRICS.md) |
 | **Network detection** | [Suricata inline IPS](integrations/network-security/suricata-integration.md) + [Zeek NSM](integrations/network-security/zeek-integration.md) |
 | **Threat intelligence** | [Native OSINT CDB](integrations/threat-intelligence/osint-cdb-integration.md) + [MISP](integrations/threat-intelligence/misp-integration.md) + [SpiderFoot](integrations/threat-intelligence/spiderfoot-integration.md) |
 | **Alert triage & SOC process** | [L1 triage playbook](playbooks/L1-triage-playbook.md) + [escalation matrix](playbooks/escalation-matrix.md) |
@@ -105,7 +105,7 @@ the [full catalog](./integrations).
 
 ```
 ├── METRICS.md              Single source of truth for every number quoted anywhere
-├── integrations/           22 documented tool integrations across 7 categories
+├── integrations/           23 documented tool integrations across 7 categories
 ├── playbooks/              L1 triage playbook, L1/L2/L3 escalation matrix
 ├── incident-reports/       Worked incidents in client-deliverable format
 ├── detection-coverage/     ATT&CK coverage assessment, including gaps
@@ -128,7 +128,7 @@ successes tells a reviewer nothing about judgement.
 
 ---
 
-## Integrated security stack — 22 documented
+## Integrated security stack — 23 documented
 
 Each tool links to its guide with configuration, validated `wazuh-logtest` output, DevTools
 queries and dashboard screenshots captured during validation.
@@ -137,7 +137,7 @@ queries and dashboard screenshots captured during validation.
 | --- | --- |
 | **Core SIEM** | Wazuh Manager · Indexer · Dashboard · Filebeat |
 | **Threat Intelligence & Detection** (8) | [OSINT CDB](integrations/threat-intelligence/osint-cdb-integration.md) · [MISP](integrations/threat-intelligence/misp-integration.md) · [SpiderFoot](integrations/threat-intelligence/spiderfoot-integration.md) · [CALDERA](integrations/threat-intelligence/caldera-integration.md) · [YARA](integrations/threat-intelligence/yara-integration.md) · [Falco (eBPF)](integrations/threat-intelligence/falco-integration.md) · [Cowrie](integrations/threat-intelligence/cowrie-integration.md) · [Auditd](integrations/threat-intelligence/auditd-integration.md) |
-| **Network Security** (4) | [Suricata](integrations/network-security/suricata-integration.md) · [Zeek NSM](integrations/network-security/zeek-integration.md) · [WireGuard](integrations/network-security/wireguard-integration.md) · [UFW](integrations/network-security/ufw-integration.md) |
+| **Network Security** (5) | [Suricata](integrations/network-security/suricata-integration.md) · [Zeek NSM](integrations/network-security/zeek-integration.md) · [WireGuard](integrations/network-security/wireguard-integration.md) · [UFW](integrations/network-security/ufw-integration.md) · [Fail2ban](integrations/network-security/fail2ban-integration.md) |
 | **Data Protection** (4) | [ClamAV](integrations/data-protection/clamav-integration.md) · [VeraCrypt](integrations/data-protection/veracrypt-integration.md) · [NWIPE](integrations/data-protection/nwipe-integration.md) · [Restic](integrations/data-protection/restic-integration.md) |
 | **Incident Response & SOAR** (2) | [Shuffle SOAR](integrations/incident-response/shuffle-integration.md) · [Velociraptor](integrations/incident-response/velociraptor-integration.md) |
 | **Authentication** (2) | [FreeRADIUS](integrations/authentication/freeradius-integration.md) · [Radsecproxy](integrations/authentication/radsecproxy-integration.md) |
@@ -196,12 +196,12 @@ security data leaves the lab.
 Single self-funded workstation: Ubuntu 24.04 LTS bare metal, Intel i9, 32 GB RAM,
 RTX 4070 SUPER 12 GB, one Suricata sensor.
 
-**Always on:** Wazuh manager, indexer and dashboard, with the full **209-rule / 49-decoder
+**Always on:** Wazuh manager, indexer and dashboard, with the full **212-rule / 49-decoder
 detection corpus loaded and active**. Suricata, UFW and ClamAV run continuously.
 
 **Brought up per project:** the remaining sensors — Zeek, Cowrie, Falco, Velociraptor, MISP,
 CALDERA, OSQuery, FreeRADIUS, OpenVAS and the rest — are deployed when worked on, validated,
-documented, then torn down. Running 22 tools concurrently needs a rack, not a desktop. Every
+documented, then torn down. Running 23 tools concurrently needs a rack, not a desktop. Every
 guide records the date and version it was validated against, and configurations plus the rule
 corpus are retained so any integration can be restored.
 

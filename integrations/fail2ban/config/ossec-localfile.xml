@@ -1,7 +1,0 @@
-<!-- Add this block to /var/ossec/etc/ossec.conf to collect Fail2ban logs -->
-<ossec_config>
-  <localfile>
-    <log_format>syslog</log_format>
-    <location>/var/log/fail2ban.log</location>
-  </localfile>
-</ossec_config>

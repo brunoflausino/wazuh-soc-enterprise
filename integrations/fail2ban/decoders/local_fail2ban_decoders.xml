@@ -1,0 +1,11 @@
+<!-- Fail2ban native logfile decoder (/var/log/fail2ban.log) -->
+
+<decoder name="fail2ban">
+  <prematch>NOTICE</prematch>
+</decoder>
+
+<decoder name="fail2ban-action">
+  <parent>fail2ban</parent>
+  <regex type="pcre2">\[(\S+)\]\s+(Ban|Unban)\s+(\d+\.\d+\.\d+\.\d+)</regex>
+  <order>jail, f2b_action, srcip</order>
+</decoder>

@@ -1,0 +1,39 @@
+<group name="fail2ban,">
+
+  <!-- Base: any decoded Fail2ban event (silent, level 0) -->
+  <rule id="100800" level="0">
+    <decoded_as>fail2ban</decoded_as>
+    <description>Fail2ban messages grouped.</description>
+  </rule>
+
+  <!-- Ban -->
+  <rule id="100801" level="6">
+    <if_sid>100800</if_sid>
+    <field name="f2b_action">^Ban$</field>
+    <description>Fail2ban: host $(srcip) banned by jail $(jail)</description>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+    <group>authentication_failures,brute_force,</group>
+  </rule>
+
+  <!-- Unban -->
+  <rule id="100802" level="3">
+    <if_sid>100800</if_sid>
+    <field name="f2b_action">^Unban$</field>
+    <description>Fail2ban: host $(srcip) unbanned from jail $(jail)</description>
+    <group>fail2ban,</group>
+  </rule>
+
+  <!-- Correlation: same IP banned 3 times in 10 minutes -->
+  <rule id="100803" level="10" frequency="3" timeframe="600">
+    <if_matched_sid>100801</if_matched_sid>
+    <same_source_ip />
+    <description>Fail2ban: repeated bans on $(srcip) - persistent attacker</description>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+    <group>brute_force,attack,</group>
+  </rule>
+
+</group>

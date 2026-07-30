@@ -3,7 +3,7 @@
 This directory holds the custom Wazuh rules and decoders authored for this lab, exported from
 the live manager and sanitised for publication.
 
-**209 rules across 16 files.** Decoders live in [`../decoders/`](../decoders/) — 49 across 3
+**212 rules across 16 files.** Decoders live in [`../decoders/`](../decoders/) — 49 across 3
 files. Totals are verified by [`verify-metrics.sh`](../scripts/verify-metrics.sh) against
 [`METRICS.md`](../METRICS.md).
 
@@ -34,13 +34,13 @@ Ranges are allocated per source so collisions cannot happen silently. Wazuh rese
 | `100630–100650` | GNN anomaly ingestion | 8 | [`gnn_rules.xml`](gnn_rules.xml) |
 | `100660–100668` | Falco tuning | 9 | [`falco_tuning.xml`](falco_tuning.xml) |
 | `110000–110005` | Nuclei | 6 | [`nuclei_rules.xml`](nuclei_rules.xml) |
-| `110500–110502` | MITRE CALDERA | 3 | [`050-caldera-ttp-marker.xml`](050-caldera-ttp-marker.xml) |
+| `110500–110505` | MITRE CALDERA | 6 | [`050-caldera-ttp-marker.xml`](050-caldera-ttp-marker.xml) |
 | `110700–110721` | Auditd MITRE pack | 22 | [`110700-auditd-mitre.xml`](110700-auditd-mitre.xml) |
 | `110750–110770` | Auditd tuning | 18 | [`110700-auditd-tuning.xml`](110700-auditd-tuning.xml) |
 | `113200–113205` | SpiderFoot OSINT | 6 | [`spiderfoot_rules.xml`](spiderfoot_rules.xml) |
 | `120000–120064` | GRR, DFIR-IRIS, CAPE, generic JSON | 16 | [`local_rules_json.xml`](local_rules_json.xml) |
 | `120200–120202` | HTTP reconnaissance | 3 | [`local_http_recon_rules.xml`](local_http_recon_rules.xml) |
-| | **Total** | **209** | **16 files** |
+| | **Total** | **212** | **16 files** |
 
 Before adding a rule, check the range is free:
 

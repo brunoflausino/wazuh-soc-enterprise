@@ -668,6 +668,19 @@ purple-team loop — emulate, measure, find gap, write rule, re-measure.
 
 ---
 
+### Red-Team Execution Evidence
+
+The operation view below shows the **Discovery** adversary executing against the
+live Sandcat agent (`mnfjdy` on host `flausino`). Each row is one ATT&CK ability
+with its tactic and success status — the red-team ground truth the Wazuh rules detect.
+
+![CALDERA operation execution](assets/caldera/caldera-operation-execution.png)
+
+Caldera's own Debrief report (statistics, agent metadata, tactic graph) is included as
+[`debrief-2nd-caldera-testing.pdf`](assets/caldera/debrief-2nd-caldera-testing.pdf).
+
+---
+
 ## Troubleshooting
 
 | Symptom | Cause | Fix |

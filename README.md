@@ -8,7 +8,7 @@
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20LTS-orange)](https://ubuntu.com)
 [![Rules](https://img.shields.io/badge/Custom%20Rules-212-success)](./METRICS.md)
 [![Decoders](https://img.shields.io/badge/Custom%20Decoders-49-success)](./METRICS.md)
-[![Documented Integrations](https://img.shields.io/badge/Documented%20Integrations-23-green)](./integrations)
+[![Documented Integrations](https://img.shields.io/badge/Documented%20Integrations-24-green)](./integrations)
 [![ATT&CK Coverage](https://img.shields.io/badge/ATT%26CK-coverage%20%2B%20gaps-red)](./detection-coverage/attack-coverage.md)
 [![Metrics](https://img.shields.io/badge/metrics-script%20verified-blueviolet)](./METRICS.md)
 
@@ -80,7 +80,7 @@ Beyond the three above, these guides carry the most engineering detail:
 - **[Cowrie honeypot](integrations/threat-intelligence/cowrie-integration.md)** — the detection chain behind INC-0001
 - **[OpenVAS / GVM](integrations/vulnerability-scan/openvas-integration.md)** — vulnerability management pipeline
 
-All 23 integrations are listed [further down](#integrated-security-stack--22-documented) and in
+All 24 integrations are listed [further down](#integrated-security-stack--22-documented) and in
 the [full catalog](./integrations).
 
 ---
@@ -105,7 +105,7 @@ the [full catalog](./integrations).
 
 ```
 ├── METRICS.md              Single source of truth for every number quoted anywhere
-├── integrations/           23 documented tool integrations across 7 categories
+├── integrations/           24 documented tool integrations across 7 categories
 ├── playbooks/              L1 triage playbook, L1/L2/L3 escalation matrix
 ├── incident-reports/       Worked incidents in client-deliverable format
 ├── detection-coverage/     ATT&CK coverage assessment, including gaps

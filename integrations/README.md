@@ -9,7 +9,7 @@ which run continuously and which are brought up per project.
 All counts on this page are verified by [`scripts/verify-metrics.sh`](../scripts/verify-metrics.sh)
 against [`METRICS.md`](../METRICS.md). Do not edit them by hand.
 
-## Documented Integrations (23)
+## Documented Integrations (24)
 
 ### 🎯 [Threat Intelligence & Detection](threat-intelligence/) — 8
 - [OSINT CDB threat-intelligence correlation](threat-intelligence/osint-cdb-integration.md) — native Wazuh CDB list, bidirectional `srcip`/`dstip` matching
@@ -61,7 +61,7 @@ against [`METRICS.md`](../METRICS.md). Do not edit them by hand.
 | Authentication | 2 | ✅ Complete |
 | System Inventory | 1 | ✅ Complete |
 | Vulnerability Management | 1 | ✅ Complete |
-| **TOTAL** | **23** | **Documented & validated** |
+| **TOTAL** | **24** | **Documented & validated** |
 
 ---
 

@@ -17,12 +17,12 @@ disagree, the script is right and the badge is wrong.
 
 | Metric | Value | How it is counted |
 | --- | ---: | --- |
-| Documented integrations | **23** | Non-`README` `*.md` files under `integrations/*/`, excluding `ml-research/` |
+| Documented integrations | **24** | Non-`README` `*.md` files under `integrations/*/`, excluding `ml-research/` |
 | Integration categories | **7** | Directories under `integrations/`, excluding `ml-research/` |
 | ML research reports | **3** | `ml-research/` guides + `malware-phylogenetics/` |
 | Published rule files | *see `rules/`* | `*.xml` under `rules/` |
 | Documented playbooks | **2** | Non-`README` `*.md` under `playbooks/` |
-| Worked incident reports | **1** | Non-`README`, non-`TEMPLATE` `*.md` under `incident-reports/` |
+| Worked incident reports | **2** | Non-`README`, non-`TEMPLATE` `*.md` under `incident-reports/` |
 
 ### Integrations by category
 
@@ -30,12 +30,12 @@ disagree, the script is right and the badge is wrong.
 | --- | ---: |
 | Threat Intelligence & Detection | 8 |
 | Network Security | 5 |
-| Data Protection | 4 |
+| Data Protection | 5 |
 | Incident Response & SOAR | 2 |
 | Authentication | 2 |
 | System Inventory | 1 |
 | Vulnerability Management | 1 |
-| **Total** | **23** |
+| **Total** | **24** |
 
 ---
 

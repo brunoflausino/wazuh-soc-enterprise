@@ -115,6 +115,7 @@ Known version spread across guides (expected, not an error):
 
 | Version | Guides validated against it |
 | --- | --- |
+| 4.14.7 | ModelScan |
 | 4.14.6 | ClamAV |
 | 4.14.5 | Majority of guides |
 | 4.14.4 | Suricata, FreeRADIUS, Radsecproxy, YARA (partial) |

@@ -79,6 +79,10 @@ count stays a clean statement about deployed tooling.
   tabular baseline.*
 - [Mirai botnet phylogenetics](ml-research/malware-phylogenetics/) — Maximum Likelihood
   phylogeny of 18 Mirai variants via IQ-TREE.
+- [ModelScan — ML model supply-chain security](ml-research/modelscan-integration.md)
+  *Production FIM whodata → Active Response → quarantine pipeline for serialized ML models.
+  10 rules (`121100–121111`), MITRE T1204.002 / T1059.006, validated end-to-end against 24
+  unsafe operators across 9 Python modules, four-panel dashboard.*
 
 ---
 

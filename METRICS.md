@@ -62,6 +62,13 @@ top open item in the roadmap.
 > rule count (counted from `rules/*.xml`) is **212**, four fewer than the manager, because
 > the Fail2ban rules and decoders are documented inline in the integration guide rather than
 > exported as standalone XML files — consistent with every other integration in this repo.
+>
+> The 2026-08-07 addition of the ModelScan integration adds **10 rules**
+> (`modelscan_rules.xml`, IDs 121100–121111) and **1 rule file**, bringing the
+> repository-verifiable count to **222 rules across 17 rule files**. No new decoders
+> (ModelScan uses the native Wazuh JSON decoder). ModelScan is an `ml-research`
+> artifact and does not change the documented integration count, consistent with how
+> the GNN benchmark is handled.
 
 ## 2b. Deployment state
 

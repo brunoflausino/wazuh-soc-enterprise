@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" font-family="'DejaVu Sans','Segoe UI',Arial,sans-serif">
+<defs><linearGradient id="band" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c026d3"/><stop offset="1" stop-color="#86198f"/></linearGradient></defs>
+<rect x="2" y="2" width="1276" height="316" rx="20" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+<clipPath id="lc"><rect x="2" y="2" width="300" height="316" rx="20"/></clipPath>
+<g clip-path="url(#lc)"><rect x="2" y="2" width="320" height="316" fill="url(#band)"/></g>
+<!-- shield + scan glyph -->
+<g>
+<path d="M152 62 l44 16 v40 c0 40 -26 66 -44 76 c-18 -10 -44 -36 -44 -76 v-40 z" fill="none" stroke="#fff" stroke-width="3.2" opacity="0.9"/>
+<line x1="120" y1="118" x2="184" y2="118" stroke="#fff" stroke-width="2.6" opacity="0.6"/>
+<line x1="120" y1="138" x2="184" y2="138" stroke="#fff" stroke-width="2.6" opacity="0.6"/>
+<line x1="120" y1="158" x2="184" y2="158" stroke="#fff" stroke-width="2.6" opacity="0.6"/>
+<circle cx="152" cy="138" r="6" fill="#fff"/>
+</g>
+<text x="152.0" y="230" font-size="20" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="1">MODELSCAN</text>
+<text x="152.0" y="258" font-size="14" fill="#ffffff" opacity="0.85" text-anchor="middle" font-family="'DejaVu Sans Mono','Consolas',monospace">10 rules</text>
+<text x="346" y="74" font-size="15" fill="#94a3b8" font-family="'DejaVu Sans Mono','Consolas',monospace">integrations / ml-research</text>
+<text x="346" y="150" font-size="46" font-weight="800" fill="#0f172a">ModelScan</text>
+<text x="346" y="190" font-size="19" fill="#475569">ML model supply-chain security · FIM → quarantine</text>
+<rect x="346" y="204" width="64" height="4" rx="2" fill="#c026d3"/>
+<rect x="346" y="226" width="300" height="34" rx="17" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.4"/>
+<circle cx="363" cy="243" r="4" fill="#c026d3"/>
+<text x="376" y="248" font-size="14" fill="#475569" font-weight="600">T1204.002 · T1059.006 · Wazuh 4.14.7</text>
+<text x="1236" y="298" font-size="12" fill="#cbd5e1" text-anchor="end" font-family="'DejaVu Sans Mono','Consolas',monospace">wazuh-soc-enterprise</text>
+</svg>

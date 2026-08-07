@@ -6,7 +6,7 @@
 
 [![Wazuh](https://img.shields.io/badge/Wazuh-4.14.6-3B7DDD)](https://wazuh.com)
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20LTS-orange)](https://ubuntu.com)
-[![Rules](https://img.shields.io/badge/Custom%20Rules-212-success)](./METRICS.md)
+[![Rules](https://img.shields.io/badge/Custom%20Rules-222-success)](./METRICS.md)
 [![Decoders](https://img.shields.io/badge/Custom%20Decoders-49-success)](./METRICS.md)
 [![Documented Integrations](https://img.shields.io/badge/Documented%20Integrations-24-green)](./integrations)
 [![ATT&CK Coverage](https://img.shields.io/badge/ATT%26CK-coverage%20%2B%20gaps-red)](./detection-coverage/attack-coverage.md)
@@ -184,6 +184,13 @@ outside this repository, paused until a model beats the tabular baseline.
 ### Malware phylogenetics
 Maximum Likelihood phylogeny of 18 Mirai variants via IQ-TREE, with cross-validation.
 📄 **[Analysis →](integrations/ml-research/malware-phylogenetics/)**
+
+### ML model supply-chain security (ModelScan)
+Production FIM → Active Response → quarantine pipeline scanning serialized ML models
+(Pickle, PyTorch, Keras, TF) for unsafe deserialization operators. 10 rules
+(`121100–121111`), MITRE T1204.002 / T1059.006, validated against 24 operators across
+9 modules, four-panel dashboard.
+📄 **[Integration →](integrations/ml-research/modelscan-integration.md)**
 
 ### Local LLM runtime
 Ollama via Docker (`wazuh-ollama`) for on-prem experimentation with LLM-assisted log triage. No

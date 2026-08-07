@@ -1,0 +1,113 @@
+<!--
+  ModelScan — ML model security scanning integration
+  Detects unsafe operators in serialized ML models (Pickle, PyTorch, Keras, TF)
+  Log source: /opt/model-scan-lab/logs/modelscan-events.json (NDJSON)
+  Decoded by: native Wazuh JSON decoder
+  Rule IDs: 121100-121111
+
+  Field naming note: the discriminator field is `modelscan_event`, not
+  `event_type`. Wazuh's built-in Suricata rule 86600 matches any JSON document
+  containing both `timestamp` and `event_type`, which silently consumed
+  ModelScan events before these rules could evaluate. Renaming the field at the
+  producer resolved the collision without coupling this ruleset to Suricata.
+-->
+<group name="modelscan,ml_security,">
+
+  <!-- Parent rule: level 0, groups all ModelScan events at zero eval cost -->
+  <rule id="121100" level="0">
+    <decoded_as>json</decoded_as>
+    <field name="integration">modelscan</field>
+    <description>ModelScan: event received</description>
+  </rule>
+
+  <!-- Clean scan: informational -->
+  <rule id="121101" level="3">
+    <if_sid>121100</if_sid>
+    <field name="modelscan_event">scan_summary</field>
+    <field name="total_issues">^0$</field>
+    <description>ModelScan: model $(file_path) scanned clean</description>
+    <group>ml_security,compliance,</group>
+  </rule>
+
+  <!-- CRITICAL issue: unsafe operator capable of code execution -->
+  <rule id="121102" level="14">
+    <if_sid>121100</if_sid>
+    <field name="modelscan_event">issue</field>
+    <field name="severity">CRITICAL</field>
+    <description>ModelScan: CRITICAL unsafe operator '$(operator)' from module '$(module)' in model $(file_path)</description>
+    <mitre>
+      <id>T1204.002</id>
+      <id>T1059.006</id>
+    </mitre>
+    <group>ml_security,malware,supply_chain,</group>
+  </rule>
+
+  <!-- HIGH issue -->
+  <rule id="121103" level="12">
+    <if_sid>121100</if_sid>
+    <field name="modelscan_event">issue</field>
+    <field name="severity">HIGH</field>
+    <description>ModelScan: HIGH severity operator '$(operator)' in model $(file_path)</description>
+    <mitre>
+      <id>T1204.002</id>
+    </mitre>
+    <group>ml_security,malware,supply_chain,</group>
+  </rule>
+
+  <!-- MEDIUM issue: alert but no quarantine.
+       ModelScan 0.8.8 leaves MEDIUM empty by default; this rule fires only
+       when a custom settings file populates the MEDIUM tier. -->
+  <rule id="121104" level="8">
+    <if_sid>121100</if_sid>
+    <field name="modelscan_event">issue</field>
+    <field name="severity">MEDIUM</field>
+    <description>ModelScan: MEDIUM severity operator '$(operator)' in model $(file_path)</description>
+    <group>ml_security,supply_chain,</group>
+  </rule>
+
+  <!-- LOW issue. Empty by default in ModelScan 0.8.8 (see 121104). -->
+  <rule id="121105" level="5">
+    <if_sid>121100</if_sid>
+    <field name="modelscan_event">issue</field>
+    <field name="severity">LOW</field>
+    <description>ModelScan: LOW severity finding in model $(file_path)</description>
+    <group>ml_security,</group>
+  </rule>
+
+  <!-- Quarantine action confirmed: the response fired -->
+  <rule id="121106" level="12">
+    <if_sid>121100</if_sid>
+    <field name="modelscan_event">scan_summary</field>
+    <field name="quarantined">true</field>
+    <description>ModelScan: model $(file_path) QUARANTINED - $(critical) critical, $(high) high findings</description>
+    <mitre>
+      <id>T1204.002</id>
+    </mitre>
+    <group>ml_security,active_response,malware,</group>
+  </rule>
+
+  <!-- Scan error: tool or report failure -->
+  <rule id="121107" level="7">
+    <if_sid>121100</if_sid>
+    <field name="modelscan_event">scan_error</field>
+    <description>ModelScan: scan failed for $(file_path) - exit code $(scan_exit_code)</description>
+    <group>ml_security,system_error,</group>
+  </rule>
+
+  <!-- FIM trigger: model file MODIFIED in incoming/ -->
+  <rule id="121110" level="10">
+    <if_sid>550</if_sid>
+    <match>/opt/model-scan-lab/incoming</match>
+    <description>ModelScan trigger: model file modified in incoming/</description>
+    <group>ml_security,syscheck,</group>
+  </rule>
+
+  <!-- FIM trigger: model file ADDED to incoming/ -->
+  <rule id="121111" level="10">
+    <if_sid>554</if_sid>
+    <match>/opt/model-scan-lab/incoming</match>
+    <description>ModelScan trigger: new model file in incoming/</description>
+    <group>ml_security,syscheck,</group>
+  </rule>
+
+</group>

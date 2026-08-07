@@ -57,6 +57,32 @@ The framework is **model-agnostic**. It is ready to consume events from any mode
 
 ---
 
+## 3. ModelScan — ML Model Supply-Chain Security
+
+**A production FIM → Active Response → quarantine pipeline for malicious ML models.**
+
+Serialized model files (Pickle, PyTorch, Keras, TensorFlow) can execute arbitrary code
+on load — a downloaded model is an execution vector that signature-based antivirus
+cannot inspect. This integration wires **ModelScan 0.8.8** into Wazuh so that every
+model entering a monitored directory is statically inspected, and CRITICAL/HIGH models
+are quarantined automatically before any process can deserialize them.
+
+| Component | Status |
+| --- | --- |
+| 10 custom rules (`121100–121111`) | ✅ Deployed and `wazuh-analysisd -t` validated |
+| FIM whodata → Active Response → quarantine | ✅ Operational, 30+ quarantine actions |
+| Native JSON ingestion via `/opt/model-scan-lab/logs/modelscan-events.json` | ✅ Operational |
+| Four-panel OpenSearch dashboard | ✅ Documented with screenshots |
+| MITRE ATT&CK (T1204.002, T1059.006) | ✅ Tagged on rules, verified indexed |
+
+Validated end-to-end against 24 distinct unsafe operators across 9 Python modules.
+The Suricata rule 86600 field collision encountered during development — and its fix —
+is documented in full.
+
+📄 **[Integration documentation →](./modelscan-integration.md)**
+
+---
+
 ## Where this could go next
 
 - **Reframe as node-level classification with GIN / sum aggregation** — the single experiment most likely to *confirm* the original hypothesis. Sum aggregation preserves the multiset cardinality that mean / softmax-attention discard.
@@ -70,6 +96,7 @@ The framework is **model-agnostic**. It is ready to consume events from any mode
 
 - `gnn-vs-tabular-scan-detection.md` — Full benchmark report (data, methods, results, ablation, discussion, references, model card)
 - `gnn-security-detector-integration.md` — Wazuh ingestion framework (rule chain, JSON schema, dashboard)
+- `modelscan-integration.md` — ModelScan ML model security pipeline (FIM → AR → quarantine)
 - `assets/` — Diagrams and dashboard screenshots
 
 ---
